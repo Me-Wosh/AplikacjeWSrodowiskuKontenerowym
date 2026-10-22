@@ -4,7 +4,7 @@
 
 **Temat:** Pierwsze kroki z Dockerem
 
-**Data wykonania:** 20.10.2026
+**Data wykonania:** 21.10.2026
 
 **Autor:** Miłosz Samotyjak
 
@@ -16,13 +16,33 @@
 
 #### 1. Cel laboratorium
 
-
+Poznanie podstaw Dockera: instalacja, uruchamianie kontenerów, pobieranie obrazów, podstawowe komendy CLI.
 
 ---
 
 #### 2. Wstęp teoretyczny
 
+Współczesna inżynieria oprogramowania w dużej mierze opiera się na mikroserwisach, powtarzalności środowisk uruchomieniowych i automatyzacji procesów CI/CD. Jednym z największych problemów tradycyjnego wdrażania aplikacji był syndrom "u mnie działa" - wynikający z drobnych różnic w wersjach bibliotek, zmiennych środowiskowych lub konfiguracji systemu operacyjnego między maszyną deweloperską a serwerem produkcyjnym. Odpowiedzią na ten problem stała się konteneryzacja, której standardem de facto stał się ekosystem Docker.
 
+**Wirtualizacja a konteneryzacja**
+
+Aby zrozumieć działanie Dockera, kluczowe jest rozróżnienie pomiędzy klasyczną wirtualizacją na poziomie sprzętu a wirtualizacją na poziomie systemu operacyjnego.
+- Maszyny wirtualne (VM) - każda maszyna wirtualna wymaga pełnej instalacji oddzielnego, gościnnego systemu operacyjnego. Skutkuje to znacznym narzutem na pamięć RAM, przestrzeń dyskową i moc procesora, a czas uruchamiania liczy się w minutach,
+- kontenery - dzielą one wspólne jądro (kernel) systemu operacyjnego hosta, izolując jedynie przestrzeń użytkownika przy pomocy mechanizmów jądra Linuxa:
+  - namespaces (przestrzenie nazw) - zapewniają izolację procesów, sieci, punktów montowania dysków i użytkowników,
+  - cgroups (control groups) - pozwalają na limitowanie i monitorowanie zasobów sprzętowych przydzielonych poszczególnym kontenerom.
+Dzięki temu kontenery są wyjątkowo lekkie - uruchamiają się w ułamki sekund i zużywają minimalną ilość zasobów ponad to, czego wymaga sama aplikacja.
+
+**Docker**
+
+Docker - otwarta platforma umożliwiająca pakowanie aplikacji wraz ze wszystkimi jej zależnościami (kodem, bibliotekami, plikami konfiguracyjnymi i środowiskiem wykonawczym) w pojedynczą, przenośną jednostkę zwaną kontenerem.
+
+Architektura Dockera opiera się na modelu klient-serwer:
+- Docker Daemon (dockerd) - usługa działająca w tle na maszynie hosta odpowiedzialna za budowanie, uruchamianie i monitorowanie kontenerów oraz zarządzanie obrazami, sieciami i wolumenami danych,
+- Docker CLI (`docker`) - narzędzie wiersza poleceń, przez które użytkownik wydaje polecenia (np. `docker run`, `docker build`). Klient komunikuje się z daemonem przez interfejs REST API,
+- obraz (Docker Image) - niezmienny, warstwowy szablon zawierający instrukcje niezbędne do utworzenia kontenera. Tworzony jest za pomocą pliku konfiguracyjnego Dockerfile,
+- kontener (Docker Container) - działająca, odizolowana instancja obrazu. Na warstwy obrazu nakładana jest cienka, zapisywalna warstwa kontenera, w której zachodzą zmiany w trakcie jego pracy,
+- wolumeny (Volumes) - mechanizm trwałości danych. Z racji tego, że kontenery są z założenia ulotne, wolumeny pozwalają montować katalogi hosta do wnętrza kontenera, gwarantując przetrwanie danych (np. baz danych).
 
 ---
 
@@ -191,7 +211,7 @@ Server:
 
 **Screenshot:**
 
-![wynik docker version](image.png)
+![wynik docker version](images/image.png)
 
 Rys. 1 - Wynik uruchomienia polecenia `docker version` - sprawdzenie informacji o kompilacji klienta i serwera Docker.
 
@@ -199,7 +219,7 @@ Rys. 1 - Wynik uruchomienia polecenia `docker version` - sprawdzenie informacji 
 
 ##### Ćwiczenie 1.2 — Hello World
 
-**Opis:** Uruchomiono kontener hello-world przygotowany przez zespół Dockera. Kontener nie został znaleziony na komputerze więc Docker pobrał odpowiedni obraz z Docker Huba, utworzył na podstawie obrazu kontener i uruchomił go dzięki czemu wypisany został tekst w terminalu.
+**Opis:** Uruchomiono kontener `hello-world` przygotowany przez zespół Dockera. Kontener nie został znaleziony na komputerze więc Docker pobrał odpowiedni obraz z Docker Huba, utworzył na podstawie obrazu kontener i uruchomił go dzięki czemu wypisany został tekst w terminalu.
 
 **Użyte polecenia:**
 
@@ -243,7 +263,7 @@ For more examples and ideas, visit:
 
 **Screenshot:**
 
-![wynik docker run hello-world](image1.png)
+![wynik docker run hello-world](images/image1.png)
 
 Rys. 2 - Wynik uruchomienia polecenia `docker run hello-world` - pobranie obrazu, utworzenie i uruchomienie kontenera oraz wypisanie tekstu w terminalu.
 
@@ -298,11 +318,11 @@ db8f773ba507   esporthub-web          "dotnet watch run --…"   4 months ago   
 
 **Pytanie:** Dlaczego kontener `hello-world` ma status `Exited`?
 
-**Odpowiedź:** Kontener posiada status `Exited`, ponieważ kontener działa do momentu aż główny skrypt wewnątrz kontenera nie zakończy swojego działania. Skrypt wewnątrz kontenera `hello-world` zakończył swoje działanie wypisując tekst w terminalu więc razem ze skryptem swoje działanie przerwał również kontener.
+**Odpowiedź:** Kontener posiada status `Exited`, ponieważ kontener działa do momentu aż główny skrypt wewnątrz kontenera nie zakończy swojego działania. Skrypt wewnątrz kontenera `hello-world` zakończył swoje działanie wypisując tekst w terminalu więc razem ze skryptem swoje działanie zakończył również kontener.
 
 **Screenshot:**
 
-![wynik docker images i docker ps -a](image-1.png)
+![wynik docker images i docker ps -a](images/image-1.png)
 
 Rys. 3 - Wynik uruchomienia poleceń `docker images` - wypisanie listy obrazów i `docker ps -a` - wypisanie wszystkich konterów, łącznie z zatrzymanymi.
 
@@ -371,7 +391,7 @@ docker.io/library/nginx:alpine
 
 **Screenshot:**
 
-![docker images po pobraniu obrazow](image-2.png)
+![docker images po pobraniu obrazow](images/image-2.png)
 
 Rys. 4 - Wynik polecenia `docker images` po pobraniu nowych obrazów - widać, że lista powiększyła się o pozycje `alpine:3.19`, `nginx:alpine` i `ubuntu:22.04`.
 
@@ -420,7 +440,7 @@ testcontainers/ryuk              0.14.0            4.26MB
 
 **Screenshot:**
 
-![wynik docker images --format](image-4.png)
+![wynik docker images --format](images/image-4.png)
 
 Rys. 5 - Wynik polecenia `docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}"` - wypisane w formie tabelarycznej informacje o obrazie: repozytorium, tag i rozmiar.
 
@@ -461,7 +481,7 @@ circleci/python   Python is an interpreted, interactive, objec…   117
 
 **Screenshot:**
 
-![wynik docker search](image-6.png)
+![wynik docker search](images/image-6.png)
 
 Rys. 6 - Wynik poleceń `docker search python --limit 5` - wyszukanie 5 obrazów Python i `docker search --filter stars=100 python` - wyszukanie wszystkich obrazów Python, które mają minimum 100 gwiazdek. W przypadku obu poleceń w formie tabelarycznej wyświetlane są informacje o nazwie, opisie i liczbie gwiazdek obrazu oraz informacja czy obraz pochodzi z listy oficjalnych obrazów Dockera utrzymywanych przez zespół Dockera wraz z twórcami danego oprogramowania.
 
@@ -548,7 +568,7 @@ mewosh@mioszs-macbook-air ~ % docker image inspect 0a9887931b0e --format='{{.Siz
 
 **Screenshot:**
 
-![wynik inspect i history](image-7.png)
+![wynik inspect i history](images/image-7.png)
 
 Rys. 7 - Wynik poleceń `docker image inspect 0a9887931b0e` - wypisanie szczegółów obrazu `ubuntu:22.04`, `docker history 0a9887931b0e` - wypisanie historii warstw obrazu Ubuntu (wykonane operacje podczas jego tworzenia, kolejność ich nakładania oraz informacja ile miejsca zajęła każda z operacji) i `docker image inspect 0a9887931b0e --format='{{.Size}}'` - wypisanie tylko rozmiaru obrazu Ubuntu.
 
@@ -638,9 +658,9 @@ ubuntu:22.04                                                                    
 
 **Screenshot:**
 
-![usuniecie obrazu](image-8.png)
+![usuniecie obrazu](images/image-8.png)
 
-Rys. 8 - Wynik poleceń `docker rm $(docker ps -aq --filter ancestor=hello-world)` - wyszukanie ID wszystkich kontenerów utworzonych na podstawie obrazu `hello-world` a następnie ich usunięcie, `docker rmi hello-world` - usunięcie obrazu `hello-world` i zweryfikowanie ich poprawności poleceniem `docker images` - widoczne zniknięcie obrazu `hello-world` z listy.
+Rys. 8 - Wynik poleceń `docker rm $(docker ps -aq --filter ancestor=hello-world)` - wyszukanie ID wszystkich kontenerów utworzonych na podstawie obrazu `hello-world` a następnie ich usunięcie, `docker rmi hello-world` - usunięcie obrazu `hello-world`. Zweryfikowano poprawność poprzednich komend poleceniem `docker images` - widoczne zniknięcie obrazu `hello-world` z listy.
 
 ---
 
@@ -866,13 +886,13 @@ mewosh@mioszs-macbook-air ~ %
 
 **Screenshot:**
 
-![uruchomiona sesja interaktywna](image-9.png)
+![uruchomiona sesja interaktywna](images/image-9.png)
 
 Rys. 9 - Uruchomiona sesja interaktywna w nowo utworzonym kontenerze.
 
-![dalej zainstalowane polecenie curl](image-10.png)
+![dalej zainstalowane polecenie curl](images/image-10.png)
 
-Rys. 10 - Wykazanie, że w nowo utworzonym kontenerze poleceniem `docker run -it ubuntu:22.04 bash` system nie rozpoznaje polecenia `curl`, natomiast w poprzednio utworzonym konterze to polecenie jest rozpoznawane.
+Rys. 10 - Wykazanie, że w nowo utworzonym kontenerze poleceniem `docker run -it ubuntu:22.04 bash` system nie rozpoznaje polecenia `curl`, natomiast w poprzednio utworzonym kontenerze to polecenie jest rozpoznawane.
 
 ---
 
@@ -1178,7 +1198,7 @@ mewosh@mioszs-macbook-air ~ % docker inspect moj-nginx
 
 **Screenshot:**
 
-![wynik docker ps](image-11.png)
+![wynik docker ps](images/image-11.png)
 
 Rys. 11 - Wynik polecenia `docker ps` - wypisanie jedynego uruchomionego kontenera (nginx).
 
@@ -1231,7 +1251,7 @@ CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS   
 
 **Screenshot:**
 
-![strona powitalna nginx](image-12.png)
+![strona powitalna nginx](images/image-12.png)
 
 Rys. 12 - Strona powitalna nginx.
 
@@ -1349,7 +1369,7 @@ mysql: [Warning] Using a password on the command line interface can be insecure.
 
 **Screenshot:**
 
-![wypisanie baz danych](image-13.png)
+![wypisanie baz danych](images/image-13.png)
 
 Rys. 13 - Lista znalezionych baz danych w kontenerze mysql.
 
@@ -1398,7 +1418,7 @@ mewosh@mioszs-macbook-air ~ %
 
 **Screenshot:**
 
-![automatyczne usuwanie kontenerow](image-14.png)
+![automatyczne usuwanie kontenerow](images/image-14.png)
 
 Rys. 14 - Automatyczne usuwanie kontenerów po zakończeniu ich działania i weryfikacja, że rzeczywiście zostały usunięte.
 
@@ -1476,7 +1496,7 @@ db8f773ba507
 
 **Screenshot:**
 
-![nadawanie nazw kontenerom](image-16.png)
+![nadawanie nazw kontenerom](images/image-16.png)
 
 Rys. 15 - Utworzenie kontenera z automatycznie nadaną nazwą `priceless_elion` i utworzenie kontenera z własną nazwą `web-server`.
 
@@ -1569,15 +1589,15 @@ security features and capabilities please refer to
 
 **Screenshot:**
 
-![wynik start restart](image-17.png)
+![wynik start restart](images/image-17.png)
 
-Rys. 16 - Wynik poleceń `docker run -d --name test-nginx -p 8080:80 nginx:alpine` - utworzenie i uruchomienie kontenera nginx o nazwie `test-nginx` z mapowaniem portów `8080:80`, `docker stop test-nginx` - zatrzymanie kontenera `test-nginx`, `docker ps -a` - wypisanie wszystkich kontenerów, `docker start test-nginx` - uruchomienie poprzednio utworzonego kontenera `test-nginx`, `docker restart test-nginx` - restart kontenera `test-nginx` i `curl http://localhost:8080` - odpytanie serwera nginx w celu weryfikacji jego działania.
+Rys. 16 - Wynik poleceń `docker run -d --name test-nginx -p 8080:80 nginx:alpine` - utworzenie i uruchomienie kontenera nginx o nazwie `test-nginx` z mapowaniem portów `8080:80`, `docker stop test-nginx` - zatrzymanie kontenera `test-nginx`, `docker ps -a` - wypisanie listy wszystkich kontenerów, `docker start test-nginx` - uruchomienie poprzednio utworzonego kontenera `test-nginx`, `docker restart test-nginx` - restart kontenera `test-nginx` i `curl http://localhost:8080` - odpytanie serwera nginx w celu weryfikacji jego działania.
 
 ---
 
 ##### Ćwiczenie 4.2 — Wykonywanie komend w kontenerze (exec)
 
-**Opis:** Wykonano polecenia na kontenerze Ubuntu i sprawdzono działające procesy zarówno z zewnątrz, jak również ze środka kontenera.
+**Opis:** Wykonano polecenia powłoki systemowej w kontenerze Ubuntu i sprawdzono działające procesy zarówno z zewnątrz, jak również ze środka kontenera.
 
 **Użyte polecenia:**
 
@@ -1679,9 +1699,9 @@ root                1018                995                 0                   
 
 **Screenshot:**
 
-![wynik exec i top](image-18.png)
+![wynik exec i top](images/image-18.png)
 
-Rys. 17 - Wynik poleceń `docker exec *` - wypisanie zawartości pliku `/etc/os-release`, aktualizacja pakietów, instalacja pakietu `procps` oraz wypisanie procesów wewnątrz kontenera i `docker top` - wypisanie działających procesów z zewnątrz kontenera.
+Rys. 17 - Wynik poleceń `docker exec *` - wypisanie zawartości pliku `/etc/os-release`, aktualizacja pakietów, instalacja pakietu `procps` i wypisanie procesów wewnątrz kontenera oraz `docker top` - wypisanie działających procesów z zewnątrz kontenera.
 
 ---
 
@@ -1745,7 +1765,7 @@ Witaj z kontenera
 
 **Screenshot:**
 
-![kopiowanie](image-19.png)
+![kopiowanie](images/image-19.png)
 
 Rys. 18 - Wynik tworzenia i kopiowania plików między hostem i kontenerem - zawartość pliku utworzonego na hoście została poprawnie odczytana z poziomu kontenera, jak również zawartość pliku utworzonego w kontenerze została poprawnie odczytana z poziomu hosta.
 
@@ -1826,15 +1846,15 @@ mewosh@mioszs-macbook-air ~ % docker logs -t --tail 3 logger
 
 **Screenshot:**
 
-![logi](image-20.png)
+![logi](images/image-20.png)
 
-Rys. 19 - Wynik uruchomienia nieskończonej pętli wypisującej tekst "Log: " z obecną datą, odczytania wszystkich logów, najnowszych 5 logów, odczytywania logów przybywających w czasie rzeczywistym oraz wypisania najnowszych 3 logów wraz z timestampem ich wystąpienia.
+Rys. 19 - Wynik polecenia zawierającego nieskończoną pętlę wypisującą tekst "Log: " z obecną datą, wynik odczytania wszystkich i 5 najnowszych logów, wynik odczytywania logów przybywających w czasie rzeczywistym oraz wynik wypisania najnowszych 3 logów wraz z timestampem ich wystąpienia.
 
 ---
 
 ##### Ćwiczenie 4.5 — Statystyki zasobów
 
-**Opis:** Uruchomiono 2 kontenery a następnie sprawdzono wykorzystanie zasobów sprzętowych z różnymi opcjami formatowania.
+**Opis:** Uruchomiono 2 kontenery a następnie sprawdzono wykorzystanie zasobów sprzętowych z różnymi opcjami formatowania tekstu wynikowego.
 
 **Użyte polecenia:**
 
@@ -1898,7 +1918,7 @@ test-nginx   0.00%     7.254MiB / 7.653GiB
 
 **Screenshot:**
 
-![docker stats](image-21.png)
+![docker stats](images/image-21.png)
 
 Rys. 20 - Wynik wykonania polecenia `docker stats` - wyświetlanie statystyk zużycia zasobów przez kontenery w czasie rzeczywistym.
 
@@ -2215,7 +2235,7 @@ mewosh@mioszs-macbook-air ~ % docker inspect -f '{{json .Config.Env}}' inspect-t
 
 **Screenshot:**
 
-![adres ip](image-22.png)
+![adres ip](images/image-22.png)
 
 Rys. 21 - Wynik polecenia `docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' inspect-test` - wyświetlenie adresu IP kontenera.
 
@@ -2223,7 +2243,7 @@ Rys. 21 - Wynik polecenia `docker inspect -f '{{range .NetworkSettings.Networks}
 
 ##### Ćwiczenie 5.2 — docker diff
 
-**Opis:** Wprowadzono zmiany w konterze i porównano je z oryginalnym stanem obrazu Ubuntu, na podstawie którego utworzono kontener.
+**Opis:** Wprowadzono zmiany w kontenerze i porównano je z oryginalnym stanem obrazu Ubuntu, na podstawie którego utworzono kontener.
 
 **Użyte polecenia:**
 
@@ -2286,9 +2306,9 @@ D /etc/issue
 
 **Screenshot:**
 
-![wynik diff](image-23.png)
+![wynik diff](images/image-23.png)
 
-Rys. 22 - Wynik polecenia `docker diff diff-test` - wypisanie zmian w stanie kontenera względem stanu oryginalnego obrazu.
+Rys. 22 - Wynik polecenia `docker diff diff-test` - wypisanie zmian w kontenerze względem stanu oryginalnego obrazu.
 
 ---
 
@@ -2329,7 +2349,7 @@ mewosh@mioszs-macbook-air ~ % docker port port-test 80
 
 **Screenshot:**
 
-![wynik mapowania portow](image-24.png)
+![wynik mapowania portow](images/image-24.png)
 
 Rys. 23 - Wynik poleceń `docker port *` - wypisanie mapowań portów komputera hosta na porty wewnątrz kontenera.
 
@@ -2337,7 +2357,7 @@ Rys. 23 - Wynik poleceń `docker port *` - wypisanie mapowań portów komputera 
 
 ##### Ćwiczenie 6.1 — Usuwanie kontenerów i obrazów
 
-**Opis:** 
+**Opis:** Zatrzymano i usunięto wszystkie kontenery, usunięto nieużywane obrazy i pozostałe komponenty Dockera oraz sprawdzono zajętość dysku przed i po czyszczeniu.
 
 **Użyte polecenia:**
 
@@ -2435,11 +2455,416 @@ Build Cache     32        0         1.269GB   0B
 
 **Screenshot:**
 
-![system df przed czyszczeniem](image-25.png)
+![system df przed czyszczeniem](images/image-25.png)
 
-![system df po czyszczeniu](image-26.png)
+![system df po czyszczeniu](images/image-26.png)
 
 Rys. 24 - Wynik polecenia `docker system df` przed i po czyszczeniu obrazów i innych nieużywanych komponentów - zwolniono ponad 500 MB pamięci.
+
+---
+
+##### Zadania do samodzielnego wykonania
+
+##### Ćwiczenie 1 — Serwer HTTP
+
+**Opis:** Uruchomiono kontener o nazwie `serwer-http` na podstawie obrazu `httpd:alpine` z przekierowaniem portu 8888 hosta na port 80 (domyślny port protokołu HTTP i serwera Apache httpd) kontenera.
+
+**Użyte polecenia:**
+
+```zsh
+docker run -d --name serwer-http -p 8888:80 httpd:alpine
+```
+
+**Wynik działania:**
+
+```zsh
+mewosh@mioszs-macbook-air ~ % docker run -d --name serwer-http -p 8888:80 httpd:alpine
+Unable to find image 'httpd:alpine' locally
+alpine: Pulling from library/httpd
+5039119939d5: Pull complete 
+c6e2904ac185: Pull complete 
+a507aa80ad00: Pull complete 
+4f4fb700ef54: Pull complete 
+9b7d232c6e6d: Pull complete 
+98b3bd652a0c: Pull complete 
+bd25f633d976: Download complete 
+6c5941cad9ef: Download complete 
+Digest: sha256:3440c39d8d6f54fa9ad2549e5a60c19ddd435faadc29c1ad28aa795f71888889
+Status: Downloaded newer image for httpd:alpine
+c5d7f2c6c2c62d421095836d83ae719a62f48cead3d22d2d5c120bce6ef3abd2
+```
+
+**Screenshot:**
+
+![serwer httpd](images/image-27.png)
+
+Rys. 25 - Strona powitalna serwera HTTP na porcie 8888.
+
+---
+
+##### Ćwiczenie 2 — Baza PostgreSQL
+
+**Opis:** Stworzono kontener PostgreSQL z hasłem `student123` i bazą danych `uczelnia`. Zweryfikowano, że baza danych została uruchomiona i przyjmuje połączenia a następnie utworzono tabelę `studenci` i zweryfikowano jej istnienie.
+
+**Użyte polecenia:**
+
+```zsh
+docker run -d \
+  --name baza-postgresql \
+  -e POSTGRES_PASSWORD=student123 \
+  -e POSTGRES_DB=uczelnia \
+  -v pgdata:/var/lib/postgresql \
+  postgres
+
+docker logs -f baza-postgresql
+# CTRL+C
+
+docker exec -i baza-postgresql psql uczelnia -U postgres << 'EOF'
+CREATE TABLE studenci (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  imie VARCHAR(50) NOT NULL,
+  nazwisko VARCHAR(100) NOT NULL,
+  nr_albumu CHAR(5) NOT NULL UNIQUE
+);
+EOF
+
+docker exec -i baza-postgresql psql uczelnia -U postgres -c '\d studenci'
+```
+
+**Wynik działania:**
+
+```zsh
+mewosh@mioszs-macbook-air ~ % docker run -d \
+  --name baza-postgresql \
+  -e POSTGRES_PASSWORD=student123 \
+  -e POSTGRES_DB=uczelnia \
+  -v pgdata:/var/lib/postgresql \
+  postgres
+Unable to find image 'postgres:latest' locally
+latest: Pulling from library/postgres
+7ceb07498658: Pull complete 
+19fcd068927b: Pull complete 
+dae9c1725998: Pull complete 
+c344258f5c4b: Pull complete 
+a97c43a6325a: Pull complete 
+145ddee77a61: Pull complete 
+adef3e37879a: Pull complete 
+7f4f6f4ec9d3: Pull complete 
+21a9e5df9938: Pull complete 
+bbeda6b4abb7: Pull complete 
+729e9c644210: Pull complete 
+364028cfe3c1: Pull complete 
+9aa353a8667f: Pull complete 
+6c044be2c0a9: Download complete 
+c899644b9c0a: Download complete 
+Digest: sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
+Status: Downloaded newer image for postgres:latest
+b306297ef32bb8fe592cf98e23366c74ec03862a0037a25459364fa7be3d8808
+```
+
+```zsh
+mewosh@mioszs-macbook-air ~ % docker logs -f baza-postgresql
+The files belonging to this database system will be owned by user "postgres".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "en_US.utf8".
+The default database encoding has accordingly been set to "UTF8".
+The default text search configuration will be set to "english".
+
+Data page checksums are enabled.
+
+fixing permissions on existing directory /var/lib/postgresql/18/docker ... ok
+creating subdirectories ... ok
+selecting dynamic shared memory implementation ... posix
+selecting default "max_connections" ... 100
+selecting default "shared_buffers" ... 128MB
+selecting default time zone ... Etc/UTC
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... ok
+initdb: warning: enabling "trust" authentication for local connections
+initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+syncing data to disk ... ok
+
+
+Success. You can now start the database server using:
+
+    pg_ctl -D /var/lib/postgresql/18/docker -l logfile start
+
+waiting for server to start....2026-10-20 13:56:25.342 UTC [53] LOG:  starting PostgreSQL 18.6 (Debian 18.6-1.pgdg13+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+2026-10-20 13:56:25.343 UTC [53] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-10-20 13:56:25.345 UTC [59] LOG:  database system was shut down at 2026-10-20 13:56:25 UTC
+2026-10-20 13:56:25.347 UTC [53] LOG:  database system is ready to accept connections
+ done
+server started
+CREATE DATABASE
+
+
+/usr/local/bin/docker-entrypoint.sh: ignoring /docker-entrypoint-initdb.d/*
+
+waiting for server to shut down....2026-10-20 13:56:25.522 UTC [53] LOG:  received fast shutdown request
+2026-10-20 13:56:25.524 UTC [53] LOG:  aborting any active transactions
+2026-10-20 13:56:25.525 UTC [53] LOG:  background worker "logical replication launcher" (PID 62) exited with exit code 1
+2026-10-20 13:56:25.525 UTC [57] LOG:  shutting down
+2026-10-20 13:56:25.526 UTC [57] LOG:  checkpoint starting: shutdown immediate
+2026-10-20 13:56:25.551 UTC [57] LOG:  checkpoint complete: wrote 943 buffers (5.8%), wrote 3 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.012 s, sync=0.013 s, total=0.027 s; sync files=303, longest=0.005 s, average=0.001 s; distance=4352 kB, estimate=4352 kB; lsn=0/1BA1BF0, redo lsn=0/1BA1BF0
+2026-10-20 13:56:25.556 UTC [53] LOG:  database system is shut down
+ done
+server stopped
+
+PostgreSQL init process complete; ready for start up.
+
+2026-10-20 13:56:25.642 UTC [1] LOG:  starting PostgreSQL 18.6 (Debian 18.6-1.pgdg13+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+2026-10-20 13:56:25.642 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2026-10-20 13:56:25.642 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+2026-10-20 13:56:25.644 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-10-20 13:56:25.646 UTC [75] LOG:  database system was shut down at 2026-10-20 13:56:25 UTC
+2026-10-20 13:56:25.648 UTC [1] LOG:  database system is ready to accept connections
+```
+
+```zsh
+mewosh@mioszs-macbook-air ~ % docker exec -i baza-postgresql psql uczelnia -U postgres << 'EOF'
+CREATE TABLE studenci (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  imie VARCHAR(50) NOT NULL,
+  nazwisko VARCHAR(100) NOT NULL,
+  nr_albumu CHAR(5) NOT NULL UNIQUE
+);
+
+\l;
+EOF
+CREATE TABLE
+```
+
+```zsh
+mewosh@mioszs-macbook-air ~ % docker exec -i baza-postgresql psql uczelnia -U postgres -c '\d studenci'
+                            Table "public.studenci"
+  Column   |          Type          | Collation | Nullable |      Default      
+-----------+------------------------+-----------+----------+-------------------
+ id        | uuid                   |           | not null | gen_random_uuid()
+ imie      | character varying(50)  |           | not null | 
+ nazwisko  | character varying(100) |           | not null | 
+ nr_albumu | character(5)           |           | not null | 
+Indexes:
+    "studenci_pkey" PRIMARY KEY, btree (id)
+    "studenci_nr_albumu_key" UNIQUE CONSTRAINT, btree (nr_albumu)
+```
+
+**Screenshot:**
+
+![utworzona tabela](images/image-28.png)
+
+Rys. 26 - Poprawnie utworzona tabela `studenci` w bazie `uczelnia`.
+
+---
+
+##### Ćwiczenie 3 — Eksploracja kontenera
+
+**Opis:** Uruchomiono kontener `python:3.11-slim`, sprawdzono wersję Pythona wewnątrz kontenera, zainstalowano bibliotekę `requests` i wykonano prosty skrypt pobierający losowy fakt o kotach.
+
+**Użyte polecenia:**
+
+```zsh
+docker run -it python:3.11-slim bash
+ 
+python --version
+
+pip install requests
+
+python
+
+import requests
+response = requests.get('https://catfact.ninja/fact')
+print(response.json()['fact'])
+```
+
+**Wynik działania:**
+
+```zsh
+mewosh@mioszs-macbook-air ~ % docker run -it python:3.11-slim bash
+Unable to find image 'python:3.11-slim' locally
+3.11-slim: Pulling from library/python
+7ca0c331ecfd: Pull complete 
+9eb0fb93ee08: Pull complete 
+73a63ac3ec4a: Pull complete 
+56f7c999317d: Download complete 
+58b126dd1754: Download complete 
+Digest: sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce
+Status: Downloaded newer image for python:3.11-slim
+root@57d383094528:/#
+```
+
+```zsh
+root@57d383094528:/# python --version
+Python 3.11.17
+```
+
+```zsh
+root@57d383094528:/# pip install requests
+Collecting requests
+  Downloading requests-2.34.2-py3-none-any.whl.metadata (4.8 kB)
+Collecting charset_normalizer<4,>=2 (from requests)
+  Downloading charset_normalizer-3.5.2-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl.metadata (46 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 46.4/46.4 kB 156.6 kB/s eta 0:00:00
+Collecting idna<4,>=2.5 (from requests)
+  Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+Collecting urllib3<3,>=1.26 (from requests)
+  Downloading urllib3-2.8.0-py3-none-any.whl.metadata (7.4 kB)
+Collecting certifi>=2023.5.7 (from requests)
+  Downloading certifi-2026.10.19-py3-none-any.whl.metadata (2.5 kB)
+Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 73.1/73.1 kB 654.0 kB/s eta 0:00:00
+Downloading certifi-2026.10.19-py3-none-any.whl (136 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 136.5/136.5 kB 637.2 kB/s eta 0:00:00
+Downloading charset_normalizer-3.5.2-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl (259 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 259.3/259.3 kB 421.0 kB/s eta 0:00:00
+Downloading idna-3.20-py3-none-any.whl (69 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 69.6/69.6 kB 513.6 kB/s eta 0:00:00
+Downloading urllib3-2.8.0-py3-none-any.whl (135 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 135.7/135.7 kB 660.7 kB/s eta 0:00:00
+Installing collected packages: urllib3, idna, charset_normalizer, certifi, requests
+Successfully installed certifi-2026.10.19 charset_normalizer-3.5.2 idna-3.20 requests-2.34.2 urllib3-2.8.0
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: pip install --upgrade pip
+```
+
+```zsh
+root@57d383094528:/# python
+Python 3.11.17 (main, Oct  6 2026, 02:08:45) [GCC 14.2.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>>
+```
+
+```zsh
+>>> import requests
+>>> response = requests.get('https://catfact.ninja/fact')
+>>> print(response.json()['fact'])
+Baking chocolate is the most dangerous chocolate to your cat.
+>>> 
+```
+
+**Screenshot:**
+
+![wynik requests](images/image-29.png)
+
+Rys. 27 - Wynik prostego skryptu Python korzystającego z biblioteki `requests` - pobranie losowego faktu o kotach.
+
+---
+
+##### Ćwiczenie 4 — Porównanie obrazów
+
+**Opis:** Pobrano 3 obrazy Pythona: `python:3.11`, `python:3.11-slim` i `python:3.11-alpine` a następnie porównano ich rozmiar i zawartość.
+
+**Użyte polecenia:**
+
+```zsh
+docker pull python:3.11
+docker pull python:3.11-slim
+docker pull python:3.11-alpine
+
+docker images python \
+  --filter "reference=python:3.11*" \
+  --format "table {{.Repository}}:{{.Tag}}\t{{.ID}}\t{{.Size}}"
+
+for img in python:3.11 python:3.11-slim python:3.11-alpine; do
+  echo "=== Obraz: $img ==="
+  docker run --rm "$img" sh -c '
+    echo "Python:    $(python --version 2>&1)"
+    echo "Libc:      $(ldd --version 2>&1 | head -n 1)"
+    echo "Pakiety:   $(which apt-get apk 2>/dev/null)"
+    echo "Narzędzia: gcc=$(which gcc 2>/dev/null || echo brak), curl=$(which curl 2>/dev/null || echo brak)"
+  '
+  echo ""
+done
+```
+
+**Wynik działania:**
+
+```zsh
+mewosh@mioszs-macbook-air ~ % docker pull python:3.11
+3.11: Pulling from library/python
+6cc82442b8d0: Pull complete 
+a7f73cdbf7c7: Pull complete 
+21752e08707a: Pull complete 
+df9831efb49c: Pull complete 
+86f385aa2c76: Pull complete 
+a6b55ba8dd17: Pull complete 
+604b0f476193: Pull complete 
+26149b5dcf02: Download complete 
+1e81fab18ceb: Download complete 
+Digest: sha256:50cfccc707e8721201ee018bfd7f6a85d8eacf49c4f9f75833a2aba09a10411f
+Status: Downloaded newer image for python:3.11
+docker.io/library/python:3.11
+```
+
+```zsh
+mewosh@mioszs-macbook-air ~ % docker pull python:3.11-slim
+3.11-slim: Pulling from library/python
+Digest: sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce
+Status: Image is up to date for python:3.11-slim
+docker.io/library/python:3.11-slim
+```
+
+```zsh
+mewosh@mioszs-macbook-air ~ % docker pull python:3.11-alpine
+3.11-alpine: Pulling from library/python
+487d5e9ee293: Pull complete 
+a697faad4c01: Pull complete 
+d7c700d6750a: Pull complete 
+07c44dceeea9: Download complete 
+c7a58aa77327: Download complete 
+Digest: sha256:d9368b3a5ac59afea7b5d4f2e2aea0941dbf9fdee9c369c5bec00b98244bc929
+Status: Downloaded newer image for python:3.11-alpine
+docker.io/library/python:3.11-alpine
+```
+
+```zsh
+mewosh@mioszs-macbook-air ~ % docker images python \
+  --filter "reference=python:3.11*" \
+  --format "table {{.Repository}}:{{.Tag}}\t{{.ID}}\t{{.Size}}"
+REPOSITORY:TAG       IMAGE ID       SIZE
+python:3.11          50cfccc707e8   1.62GB
+python:3.11-slim     e88e9763f943   215MB
+python:3.11-alpine   d9368b3a5ac5   98.4MB
+```
+
+```zsh
+mewosh@mioszs-macbook-air ~ % for img in python:3.11 python:3.11-slim python:3.11-alpine; do
+  echo "=== Obraz: $img ==="
+  docker run --rm "$img" sh -c '
+    echo "Python:    $(python --version 2>&1)"
+    echo "Libc:      $(ldd --version 2>&1 | head -n 1)"
+    echo "Pakiety:   $(which apt-get apk 2>/dev/null)"
+    echo "Narzędzia: gcc=$(which gcc 2>/dev/null || echo brak), curl=$(which curl 2>/dev/null || echo brak)"
+  '
+  echo ""
+done
+=== Obraz: python:3.11 ===
+Python:    Python 3.11.17
+Libc:      ldd (Debian GLIBC 2.41-12+deb13u4) 2.41
+Pakiety:   /usr/bin/apt-get
+Narzędzia: gcc=/usr/bin/gcc, curl=/usr/bin/curl
+
+=== Obraz: python:3.11-slim ===
+Python:    Python 3.11.17
+Libc:      ldd (Debian GLIBC 2.41-12+deb13u4) 2.41
+Pakiety:   /usr/bin/apt-get
+Narzędzia: gcc=brak, curl=brak
+
+=== Obraz: python:3.11-alpine ===
+Python:    Python 3.11.17
+Libc:      musl libc (aarch64)
+Pakiety:   /sbin/apk
+Narzędzia: gcc=brak, curl=brak
+```
+
+**Screenshot:**
+
+![porownanie pythonow](images/image-30.png)
+
+Rys. 28 - Porównanie obrazów Pythona - widoczne różnice w bibliotece libc (bibliotece standardowej C), narzędziu do pobierania pakietów (różnice w używanych systemach operacyjnych) i w liczbie zainstalowanych narzędzi.
 
 ---
 
@@ -2448,19 +2873,19 @@ Rys. 24 - Wynik polecenia `docker system df` przed i po czyszczeniu obrazów i i
 ##### Dockerfile
 
 ```dockerfile
-# [WKLEJ TUTAJ ZAWARTOŚĆ PLIKU Dockerfile]
+# -brak-
 ```
 
 ##### docker-compose.yaml
 
 ```yaml
-# [WKLEJ TUTAJ ZAWARTOŚĆ PLIKU docker-compose.yaml]
+# -brak-
 ```
 
 ##### Inne pliki
 
 ```
-# [WKLEJ TUTAJ ZAWARTOŚĆ INNYCH ISTOTNYCH PLIKÓW, NP. .env, nginx.conf ITP.]
+# -brak-
 ```
 
 ---
@@ -2469,18 +2894,26 @@ Rys. 24 - Wynik polecenia `docker system df` przed i po czyszczeniu obrazów i i
 
 | Problem | Rozwiązanie |
 |---------|-------------|
-| Polecenie `docker version` zakończone wynikiem: <br/>  `failed to connect to the docker API at unix:///Users/mewosh/.docker/run/docker.sock; check if the path is correct and if the daemon is running: dial unix /Users/mewosh/.docker/run/docker.sock: connect: no such file or directory` | Daemon Dockera nie był uruchomiony (usługa Dockera nie uruchamia się automatycznie w systemie macOS) - należało uruchomić usługę, np. poprzez uruchomienie programu Docker Desktop |
+| Polecenie `docker version` zakończone wynikiem: <br/>  `failed to connect to the docker API at unix:///Users/mewosh/.docker/run/docker.sock; check if the path is correct and if the daemon is running: dial unix /Users/mewosh/.docker/run/docker.sock: connect: no such file or directory` | Daemon Dockera nie był uruchomiony (usługa Dockera nie uruchamia się automatycznie w systemie macOS) - należało uruchomić usługę, np. poprzez uruchomienie programu Docker Desktop. |
 | Polecenie `docker image inspect ubuntu:22.04` zakończone wynikiem: <br/> `[]` <br/> `Error response from daemon: {"message":"No such image: ubuntu:22.04"}` | Aby uzyskać informacje o obrazie należy podać ID obrazu lub sprecyzować platformę sprzętową obrazu. Dzieje się tak, ponieważ Docker Desktop od wersji 4.34 korzysta z nowego magazynu `containerd snapshotter`. W tym trybie obrazy są dzielone na przestrzenie nazw (namespaces) i platformy sprzętowe przez co Docker nie potrafi znaleźć obrazu bez podania informacji o przestrzeni nazw lub platformie sprzętowej. Informacja o wykorzystywaniu `containerd snapshotter` widnieje w wyniku polecenia `docker info` użytego w ćwiczeniu 1.1: <br/> `Storage Driver: overlayfs` <br/> `  driver-type: io.containerd.snapshotter.v1` |
 
 ---
 
 #### 6. Wnioski
 
-[Podsumowanie — czego się nauczyłeś/aś, jakie wnioski wynikają z przeprowadzonych ćwiczeń, co było najtrudniejsze, co najciekawsze.]
+Kontenery Dockera zapewniają lekkie, odizolowane środowisko uruchomieniowe. Działają one tak długo, jak długo aktywny jest ich proces główny. Przykład kontenera `hello-world` pokazał, że po wypisaniu komunikatu proces zakończył się, a kontener przeszedł w stan `Exited`.
+
+Analiza i porównanie różnych obrazów bazowych (np. Ubuntu vs Alpine) wykazały drastyczne różnice w ich rozmiarze. Obrazy oparte na dystrybucji Alpine Linux są znacznie mniejsze (często poniżej kilkunastu MB) ze względu na odchudzone biblioteki bazowe i brak zbędnych pakietów narzędziowych.   
+
+Domyślnie sieć kontenera jest odizolowana od hosta. Aby usługa (np. serwer HTTP nginx) była dostępna z zewnątrz, konieczne było jawne zmapowanie portów.
+
+W ramach laboratorium nie napotkano większych problemów. Wszystkie ćwiczenia były bardzo zbliżone pod względem poziomu trudności.
+
+Najciekawszy był proces interakcji z kontenerami za pomocą sesji terminala wewnątrz kontenera.
 
 ---
 
 #### 7. Bibliografia / źródła
 
 - [Docker Documentation](https://docs.docker.com/)
-- [INNE WYKORZYSTANE ŹRÓDŁA]
+- [Postgres 18 Documentation](https://www.postgresql.org/docs/18/index.html)
