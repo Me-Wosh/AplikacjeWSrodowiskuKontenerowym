@@ -1,0 +1,38 @@
+# Obraz do budowania
+FROM python:3.11-alpine AS builder
+
+# Wyłączenie tworzenia skompilowanego kodu bajtowego, celem oszczędzania miejsca na dysku i zmniejszenia operacji I/O
+ENV PYTHONDONTWRITEBYTECODE=1
+
+WORKDIR /app
+
+# Środowisko wirtualne
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Instalacja zależności w celu umożliwienia ich cachowania
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+
+# Obraz dla runtime
+FROM python:3.11-alpine AS runner
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/opt/venv/bin:$PATH"
+
+WORKDIR /app
+
+# Utworzenie grupy i użytkownika niebędącego rootem dla bezpieczeństwa
+RUN addgroup -g 10001 -S appuser && \
+    adduser -u 10001 -S -D -G appuser -h /app appuser
+
+COPY --from=builder /opt/venv /opt/venv
+COPY --chown=appuser:appuser . .
+
+EXPOSE 5000
+
+USER appuser
+
+CMD ["python", "main.py"]

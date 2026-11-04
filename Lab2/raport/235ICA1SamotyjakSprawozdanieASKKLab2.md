@@ -4,7 +4,7 @@
 
 **Temat:** Budowanie obrazów z Dockerfile
 
-**Data wykonania:** 
+**Data wykonania:** 04.11.2026
 
 **Autor:** Miłosz Samotyjak
 
@@ -22,7 +22,37 @@ Nauka tworzenia własnych obrazów Docker za pomocą Dockerfile — od prostych 
 
 #### 2. Wstęp teoretyczny
 
-[Opcjonalnie — krótkie wprowadzenie teoretyczne dotyczące omawianych technologii/narzędzi, np. czym jest Docker, wolumeny, sieci itp.]
+**Dockerfile**
+
+Tekstowy skrypt zawierający sekwencję instrukcji używaną przez Dockera do automatycznego zbudowania obrazu. Służy za szkielet środowiska aplikacji, precyzuje wszystko, zaczynając od systemu operacyjnego i środowiska uruchomieniowego języka, kończąc na plikach z kodem, zmiennych środowiskowych i poleceniach uruchomieniowych.
+
+Najpopularniejsze komendy Dockerfile:
+- `FROM` - ustawia bazowy obraz, na podstawie którego będzie budowany nasz obraz, 
+- `WORKDIR` - ustawia bazowy katalog wewnątrz kontenera, na którym będą wykonywane operacje,
+- `COPY` - kopiuje pliki lub katalogi z maszyny hosta do systemu plików kontenera,
+- `ADD` - działa podobnie do `COPY`. Potrafi dodatkowo pobierać dane z zewnętrznych URL i rozpakowywać archiwa,
+- `RUN` - wykonuje komendy podczas budowania obrazu,
+- `ENV` - ustawia zmienne środowiskowe dostępne podczas budowania i w uruchomionym kontenerze,
+- `EXPOSE` - ustawia porty sieciowe, na których nasłuchuje kontener w trakcie jego działania,
+- `USER` - zmienia użytkownika wewnątrz kontenera, który będzie wykonywał kolejne polecenia,
+- `CMD` - precyzuje domyślny skrypt uruchomieniowy i jego argumenty dla uruchomionego kontenera,
+- `ENTRYPOINT` - konfiguruje stałą komendę, która zawsze zostaje uruchomiona na starcie kontenera.
+
+**.dockerignore**
+
+Plik działający podobnie do pliku `.gitignore`, będącego częścią systemu kontroli wersji Git, zawierający listę plików i katalogów, które nie mają znaleźć się w końcowym obrazie, np. zależności `node_modules`, niepotrzebne kontenerowi pliki takie jak `.git` lub dane wrażliwe takie jak zmienne środowiskowe.
+
+**Multi-stage builds**
+
+Pozwalają na wielokrotne używanie komendy `FROM`, z czego każda komenda może używać innego obrazu. Artefakty budowania można kopiować między etapami, pomijając te, które są już zbędne. Głównym celem wieloetapowego budowania jest zmniejszenie rozmiaru finalnego obrazu.
+
+**Caching**
+
+Docker wykonuje instrukcje z `Dockerfile` linijka po linijce a każda instrukcja tworzy warstwę pośrednią. Docker lokalnie cachuje te warstwy w celu przyspieszenia przyszłych buildów. Jeśli instrukcja i pliki, na których ona polega nie zmieniły się od czasu ostatniego budowania, Docker całkowicie pomija uruchamianie tej instrukcji i korzysta ze zcachowanej warstwy. Zaleca się oddzielenie rzadko zmieniających się instrukcji (np. kopiowania zależności) od reszty instrukcji (np. kopiowania kodu źródłowego) w celu efektywnego wykorzystania mechanizmu cachowania.
+
+**Docker Hub**
+
+Publiczny chmurowy rejestr hostowany przez Dockera służący do przechowywania, znajdowania i udostępniania obrazów. Można na niego wrzucać własnoręcznie stworzone obrazy i uczynić je prywatnymi lub publicznymi. Docker Hub zawiera również oficjalne, dobrze utrzymywane obrazy dla popularnych systemów operacyjnych, języków programowania lub aplikacji. Integruje się z wierszem poleceń i pipeline'ami CI/CD w celu automatyzacji budowania i dystrybucji obrazów.
 
 ---
 
@@ -30,7 +60,7 @@ Nauka tworzenia własnych obrazów Docker za pomocą Dockerfile — od prostych 
 
 ##### Ćwiczenie 1.1 — Prosty obraz z Pythonem
 
-**Opis:** Stworzono prosty skrypt Python wraz z plikiem Dockerfile i uruchomiono go z kontenera.
+**Opis:** Stworzono prosty skrypt Python wraz z plikiem `Dockerfile` i uruchomiono go z kontenera.
 
 **Użyte polecenia:**
 
@@ -82,7 +112,7 @@ Użytkownik: nieznany
 
 **Screenshot:**
 
-![Wynik budowania i uruchomienia obrazu python](image.png)
+![Wynik budowania i uruchomienia obrazu python](images/image.png)
 
 Rys. 1 - Wynik budowania i uruchomienia obrazu Python.
 
@@ -189,7 +219,7 @@ curl http://localhost:5001/health
 
 **Screenshot:**
 
-![Aplikacja Flask działająca w kontenerze](image-1.png)
+![Aplikacja Flask działająca w kontenerze](images/image-1.png)
 
 Rys. 2 - Aplikacja Flask działająca w kontenerze.
 
@@ -266,7 +296,7 @@ Hello from src
 
 ##### Ćwiczenie 2.2 — ENV i ARG
 
-**Opis:** Stworzono prosty skrypt Python odczytujący wartość zmiennych środowiskowych oraz plik Dockerfile, któremu przekazano dodatkowe argumenty do budowania, a także przekazano mu wartości zmiennych środowiskowych przy jego uruchamianiu. Na koniec porównano wartości zmiennych środowiskowych odczytanych skryptem Python między dwoma wywołaniami polecania `docker run`.
+**Opis:** Stworzono prosty skrypt Python odczytujący wartość zmiennych środowiskowych oraz plik `Dockerfile`, któremu przekazano dodatkowe argumenty do budowania i wartości zmiennych środowiskowych przy jego uruchamianiu. Na koniec porównano wartości zmiennych środowiskowych odczytanych skryptem Python między dwoma wywołaniami polecania `docker run`.
 
 **Użyte polecenia:**
 
@@ -331,7 +361,7 @@ DEBUG: true
 
 **Screenshot:**
 
-![Różnica między domyślnymi a nadpisanymi zmiennymi](image-2.png)
+![Różnica między domyślnymi a nadpisanymi zmiennymi](images/image-2.png)
 
 Rys. 3 - Różnica między domyślnymi a nadpisanymi zmiennymi - inna wartość zmiennej ENVIRONMENT (`production` vs `development`) oraz inna wartość zmiennej DEBUG (`brak` vs `true`).
 
@@ -423,7 +453,7 @@ Cześć, Student!
 
 **Screenshot:**
 
-![Porównanie zachowania CMD vs ENTRYPOINT](image-3.png)
+![Porównanie zachowania CMD vs ENTRYPOINT](images/image-3.png)
 
 Rys. 4 - Porównanie zachowania CMD vs ENTRYPOINT (nadpisanie domyślnego polecenia vs przekazanie dodatkowych argumentów).
 
@@ -489,7 +519,7 @@ UID: 0
 
 ##### Ćwiczenie 3.1 — Wpływ .dockerignore
 
-**Opis:** Utworzono prostą strukturę katalogów wraz z plikiem Dockerfile i porównano wpływ pliku .dockerignore na rozmiar kontekstu.
+**Opis:** Utworzono prostą strukturę katalogów wraz z plikiem `Dockerfile` i porównano wpływ pliku `.dockerignore` na rozmiar kontekstu.
 
 **Użyte polecenia:**
 
@@ -574,7 +604,7 @@ echo "secret" > .env
 
 **Screenshot:**
 
-![Porównanie rozmiaru kontekstu z i bez .dockerignore](image-4.png)
+![Porównanie rozmiaru kontekstu z i bez .dockerignore](images/image-4.png)
 
 Rys. 5 - Porównanie rozmiaru kontekstu z i bez `.dockerignore` - bez pliku `.dockerignore` `transferring context` zaraz po wczytaniu pliku `.dockerignore` ma wartość 2B a po dodaniu pliku `.dockerignore` 95B, natomiast kontekst samego buildu w 1 przypadku ma 46MB a w drugim jest mniejszy i wynosi 27B.
 
@@ -582,7 +612,7 @@ Rys. 5 - Porównanie rozmiaru kontekstu z i bez `.dockerignore` - bez pliku `.do
 
 ##### Ćwiczenie 4.1 — Multi-stage dla aplikacji Go
 
-**Opis:** Utworzony prosty serwer HTTP za pomocą języka Go i porównano rozmiar obrazu dla single- i multi-stage buildów.
+**Opis:** Stworzono prosty serwer HTTP za pomocą języka Go i porównano rozmiar obrazu dla single- i multi-stage buildów.
 
 **Użyte polecenia:**
 
@@ -678,7 +708,7 @@ go-app:single   538cd2b569c5        1.3GB          308MB
 
 **Screenshot:**
 
-![Porównanie rozmiarów obrazów single vs multi-stage](image-5.png)
+![Porównanie rozmiarów obrazów single vs multi-stage](images/image-5.png)
 
 Rys. 6 - Porównanie rozmiarów obrazów single vs multi-stage. Widoczny ogromny wpływ buildów multi-stage na rozmiar obrazu - zmniejszył się on o ponad 1GB.
 
@@ -686,7 +716,7 @@ Rys. 6 - Porównanie rozmiarów obrazów single vs multi-stage. Widoczny ogromny
 
 ##### Ćwiczenie 4.2 — Multi-stage dla Node.js
 
-**Opis:** 
+**Opis:** Stworzono plik `Dockerfile` z multi-stage buildem dla aplikacji Node.js i sprawdzono, czy aplikacja została prawidłowo uruchomiona.
 
 **Użyte polecenia:**
 
@@ -759,24 +789,777 @@ Hello from Node.js v20.20.2!%
 
 ---
 
+##### Ćwiczenie 5.1 — Kolejność instrukcji
+
+**Opis:** Sprawdzono wpływ cachowania na szybkość budowania obrazów Dockera i zaobserwowano znaczne skrócenie czasu budowania. Problemem pierwszego pliku `Dockerfile` (`Dockerfile.bad`) było to, że kopiował on jednocześnie wszystkie pliki hosta, łącznie z plikiem z zależnościami (`requirements.txt`), przez co Docker nie był w stanie wykryć czy nastąpiły zmiany w pliku z zależnościami. W prawidłowym pliku `Dockerfile.good` rozdzielono proces kopiowania zależności od kopiowania reszty plików, dzięki czemu Docker mógł wykryć, że nie nastąpiły żadne zmiany w pliku z zależnościami, skorzystać ze zcachowanego wyniku polecenia i całkowicie pominąć proces instalacji zależności.
+
+**Użyte polecenia:**
+
+```zsh
+mkdir -p ~/VSCodes/ASKK-25988/Lab2/cache-test && cd ~/VSCodes/ASKK-25988/Lab2/cache-test
+
+# Zbuduj oba warianty
+docker build -t cache-bad -f Dockerfile.bad .
+docker build -t cache-good -f Dockerfile.good .
+
+# Zmień app.py (np. "Wersja 2")
+sed -i "" 's/Wersja 1/Wersja 2/' app.py
+
+# Przebuduj — obserwuj użycie cache
+docker build -t cache-bad:v2 -f Dockerfile.bad .
+docker build -t cache-good:v2 -f Dockerfile.good .
+```
+
+**Wynik działania:**
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/node-multistage % mkdir -p ~/VSCodes/ASKK-25988/Lab2/cache-test && cd ~/VSCodes/ASKK-25988/Lab2/cache-test
+~/VSCodes/ASKK-25988/Lab2/cache-test % 
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/cache-test % docker build -t cache-bad -f Dockerfile.bad .
+[+] Building 4.3s (9/9) FINISHED                                                                     docker:desktop-linux
+ => [internal] load build definition from Dockerfile.bad                                                             0.0s
+ => => transferring dockerfile: 161B                                                                                 0.0s
+ => [internal] load metadata for docker.io/library/python:3.11-slim                                                  0.0s
+ => [internal] load .dockerignore                                                                                    0.0s
+ => => transferring context: 2B                                                                                      0.0s
+ => [1/4] FROM docker.io/library/python:3.11-slim@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea  0.0s
+ => => resolve docker.io/library/python:3.11-slim@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea  0.0s
+ => [internal] load build context                                                                                    0.0s
+ => => transferring context: 615B                                                                                    0.0s
+ => CACHED [2/4] WORKDIR /app                                                                                        0.0s
+ => [3/4] COPY . .                                                                                                   0.0s
+ => [4/4] RUN pip install --no-cache-dir -r requirements.txt                                                         3.5s
+ => exporting to image                                                                                               0.6s
+ => => exporting layers                                                                                              0.5s
+ => => exporting manifest sha256:3656773a28a13492b31497f475b792950419b85038ca9d23fd94b9ab9efcd47e                    0.0s 
+ => => exporting config sha256:e1a05d1810705b5d6752e39d6d6f316852141aabede43916a88a7f07294fd9a4                      0.0s 
+ => => exporting attestation manifest sha256:4df508b709ba0b990ca3e1a71f103d2d20d8444f0d708344476b21732ebe663a        0.0s 
+ => => exporting manifest list sha256:0fcad8372c934c88b6320f6523cf87b96730d87e0ce9a4dffe412fa295e0649f               0.0s 
+ => => naming to docker.io/library/cache-bad:latest                                                                  0.0s
+ => => unpacking to docker.io/library/cache-bad:latest                                                               0.1s
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/cache-test % docker build -t cache-good -f Dockerfile.good .
+[+] Building 3.9s (10/10) FINISHED                                                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile.good                                                            0.0s
+ => => transferring dockerfile: 188B                                                                                 0.0s
+ => [internal] load metadata for docker.io/library/python:3.11-slim                                                  0.0s
+ => [internal] load .dockerignore                                                                                    0.0s
+ => => transferring context: 2B                                                                                      0.0s
+ => [1/5] FROM docker.io/library/python:3.11-slim@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea  0.0s
+ => => resolve docker.io/library/python:3.11-slim@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea  0.0s
+ => [internal] load build context                                                                                    0.0s
+ => => transferring context: 131B                                                                                    0.0s
+ => CACHED [2/5] WORKDIR /app                                                                                        0.0s
+ => [3/5] COPY requirements.txt .                                                                                    0.0s
+ => [4/5] RUN pip install --no-cache-dir -r requirements.txt                                                         3.2s
+ => [5/5] COPY . .                                                                                                   0.0s
+ => exporting to image                                                                                               0.6s
+ => => exporting layers                                                                                              0.4s
+ => => exporting manifest sha256:0212dc5ecac9e9843c7cc9b045f7f5baaed2ccf133324f5e1c4dffd5c911e9cb                    0.0s 
+ => => exporting config sha256:e276e6e1080565281a80fc4dbd856fd45db0bdac3da01a88d238d2bc3a19639d                      0.0s 
+ => => exporting attestation manifest sha256:435251152159686d753ff4d73d80c04f1370172b5dfb5658ef0e9e853f34a5b7        0.0s 
+ => => exporting manifest list sha256:75d2c18f62768c3802bbaebbb0baf457b9500266442360fffa682923f514c747               0.0s
+ => => naming to docker.io/library/cache-good:latest                                                                 0.0s
+ => => unpacking to docker.io/library/cache-good:latest                                                              0.1s
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/cache-test % sed -i "" 's/Wersja 1/Wersja 2/' app.py
+~/VSCodes/ASKK-25988/Lab2/cache-test %
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/cache-test % docker build -t cache-bad:v2 -f Dockerfile.bad .
+[+] Building 3.8s (9/9) FINISHED                                                                     docker:desktop-linux
+ => [internal] load build definition from Dockerfile.bad                                                             0.0s
+ => => transferring dockerfile: 161B                                                                                 0.0s
+ => [internal] load metadata for docker.io/library/python:3.11-slim                                                  0.1s
+ => [internal] load .dockerignore                                                                                    0.0s
+ => => transferring context: 2B                                                                                      0.0s
+ => [1/4] FROM docker.io/library/python:3.11-slim@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea  0.0s
+ => => resolve docker.io/library/python:3.11-slim@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea  0.0s
+ => [internal] load build context                                                                                    0.0s
+ => => transferring context: 311B                                                                                    0.0s
+ => CACHED [2/4] WORKDIR /app                                                                                        0.0s
+ => [3/4] COPY . .                                                                                                   0.0s
+ => [4/4] RUN pip install --no-cache-dir -r requirements.txt                                                         3.0s
+ => exporting to image                                                                                               0.6s
+ => => exporting layers                                                                                              0.5s
+ => => exporting manifest sha256:80287a21dd59be0f97979abb54b467323a5ff05b5bc1b4b86513abe31c6a79aa                    0.0s 
+ => => exporting config sha256:3e38db0a383fa27cde5db131b6904c90aabb607d44b534a8e003761751350a45                      0.0s 
+ => => exporting attestation manifest sha256:1b301ef56ea3de52d4f92651d106f056e7d4909e778f7ed5824051a2d84a5a14        0.0s 
+ => => exporting manifest list sha256:749d3a07ab0cbf2b6a64e1e6293e4d9225094ba8965dcdce2f7d9137b7bf7c24               0.0s 
+ => => naming to docker.io/library/cache-bad:v2                                                                      0.0s
+ => => unpacking to docker.io/library/cache-bad:v2                                                                   0.1s
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/cache-test % docker build -t cache-good:v2 -f Dockerfile.good .
+[+] Building 0.2s (10/10) FINISHED                                                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile.good                                                            0.0s
+ => => transferring dockerfile: 188B                                                                                 0.0s
+ => [internal] load metadata for docker.io/library/python:3.11-slim                                                  0.0s
+ => [internal] load .dockerignore                                                                                    0.0s
+ => => transferring context: 2B                                                                                      0.0s
+ => [1/5] FROM docker.io/library/python:3.11-slim@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea  0.0s
+ => => resolve docker.io/library/python:3.11-slim@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea  0.0s
+ => [internal] load build context                                                                                    0.0s
+ => => transferring context: 131B                                                                                    0.0s
+ => CACHED [2/5] WORKDIR /app                                                                                        0.0s
+ => CACHED [3/5] COPY requirements.txt .                                                                             0.0s
+ => CACHED [4/5] RUN pip install --no-cache-dir -r requirements.txt                                                  0.0s
+ => [5/5] COPY . .                                                                                                   0.0s
+ => exporting to image                                                                                               0.1s
+ => => exporting layers                                                                                              0.0s
+ => => exporting manifest sha256:6424dbd7882d0c5fd58d38007e017cae236875d8b6eec6bf6296c3cda53a48d2                    0.0s
+ => => exporting config sha256:5c1350efcf39f9500230ea3a90f624880187128e62b3b3c9ba8885d34c129c93                      0.0s
+ => => exporting attestation manifest sha256:6a46dc8d558b718486f14ef0dc8a26bf2f798939665ac5eb4d3583204dddf56d        0.0s
+ => => exporting manifest list sha256:c8a953f4f7c3a8d2a0e2671cef543085119c1ab1a851bcddfa6be514feacba53               0.0s
+ => => naming to docker.io/library/cache-good:v2                                                                     0.0s
+ => => unpacking to docker.io/library/cache-good:v2                                                                  0.0s
+```
+
+**Screenshot:**
+
+![Porównanie użycia cache (CACHED vs brak)](images/image-6.png)
+
+Rys. 7 - Porównanie użycia cache (CACHED vs brak) - cache znacznie przyspieszył proces budowania a nawet całkowicie pominął etap instalacji wcześniej zainstalowanych zależności.
+
+---
+
+##### Ćwiczenie 6.1 — Healthcheck
+
+**Opis:** Uruchomiono kontener z aplikacją Flask wraz z healthcheckiem.
+
+**Użyte polecenia:**
+
+```zsh
+mkdir -p ~/VSCodes/ASKK-25988/Lab2/health-test && cd ~/VSCodes/ASKK-25988/Lab2/health-test
+
+docker build -t health-test .
+docker run -d --name health-app -p 5001:5000 health-test
+
+# Obserwuj status zdrowia
+docker ps  # kolumna STATUS pokaże (health: starting) → (healthy)
+
+# Po chwili:
+docker inspect --format='{{.State.Health.Status}}' health-app
+```
+
+**Wynik działania:**
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/cache-test % mkdir -p ~/VSCodes/ASKK-25988/Lab2/health-test && cd ~/VSCodes/ASKK-25988/Lab2/health-test
+~/VSCodes/ASKK-25988/Lab2/health-test % 
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/health-test % docker build -t health-test .
+[+] Building 4.1s (9/9) FINISHED                                                                     docker:desktop-linux
+ => [internal] load build definition from Dockerfile                                                                 0.0s
+ => => transferring dockerfile: 351B                                                                                 0.0s
+ => [internal] load metadata for docker.io/library/python:3.11-slim                                                  0.0s
+ => [internal] load .dockerignore                                                                                    0.0s
+ => => transferring context: 2B                                                                                      0.0s
+ => [1/4] FROM docker.io/library/python:3.11-slim@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea  0.0s
+ => => resolve docker.io/library/python:3.11-slim@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea  0.0s
+ => [internal] load build context                                                                                    0.0s
+ => => transferring context: 273B                                                                                    0.0s
+ => CACHED [2/4] WORKDIR /app                                                                                        0.0s
+ => [3/4] RUN pip install --no-cache-dir flask==3.0.0                                                                3.4s
+ => [4/4] COPY app.py .                                                                                              0.0s
+ => exporting to image                                                                                               0.6s 
+ => => exporting layers                                                                                              0.4s 
+ => => exporting manifest sha256:9a9ea2337a37a91db3f6427f15cdf66db3b19b6e89400f0e4b24138db339cba3                    0.0s 
+ => => exporting config sha256:29b66054c018f59e05d463f16a9f50eaed2c04769413c209f2de3795b2bde347                      0.0s 
+ => => exporting attestation manifest sha256:adf1a5b552658ed8fbb7eeabe613d4f2573617c888fac502bff309146bafd442        0.0s 
+ => => exporting manifest list sha256:2d1e6ac7caddcc1172c4d283770ff6614a6b18de9af0af7f690e36913324f48e               0.0s
+ => => naming to docker.io/library/health-test:latest                                                                0.0s
+ => => unpacking to docker.io/library/health-test:latest                                                             0.1s
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/health-test % docker run -d --name health-app -p 5001:5000 health-test
+de8ef3af532df8ed7adce78716a08356fef657d5862d3accc4a7fbb18bb978fd
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/health-test % docker ps                                                        
+CONTAINER ID   IMAGE         COMMAND           CREATED          STATUS                    PORTS                                         NAMES
+de8ef3af532d   health-test   "python app.py"   47 seconds ago   Up 46 seconds (healthy)   0.0.0.0:5001->5000/tcp, [::]:5001->5000/tcp   health-app
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/health-test % docker inspect --format='{{.State.Health.Status}}' health-app
+healthy
+```
+
+**Screenshot:**
+
+![Kontener ze statusem healthy](images/image-7.png)
+
+Rys. 8 - Kontener ze statusem `healthy`.
+
+---
+
+##### Ćwiczenie 7.1 — Tagowanie i push
+
+**Opis:** Utworzono i otagowano obraz na podstawie `Dockerfile` z ćwiczenia 1.3, wrzucono go na Docker Hub i pobrano go.
+
+**Użyte polecenia:**
+
+```zsh
+# Zaloguj się do Docker Hub
+docker login
+
+# Zbuduj obraz z tagiem
+docker build -t flask-app:v1 ~/VSCodes/ASKK-25988/Lab2/hello-python/
+
+# Otaguj dla Docker Hub (zamień USERNAME na swoje)
+docker tag flask-app:v1 mewosh/flask-app:v1
+docker tag flask-app:v1 mewosh/flask-app:latest
+
+# Wyślij na Docker Hub
+docker push mewosh/flask-app:v1
+docker push mewosh/flask-app:latest
+
+# Usuń lokalne obrazy
+docker rmi mewosh/flask-app:v1 mewosh/flask-app:latest
+
+# Pobierz z Docker Hub
+docker pull mewosh/flask-app:v1
+docker run --rm mewosh/flask-app:v1
+```
+
+**Wynik działania:**
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/health-test % docker login
+
+USING WEB-BASED LOGIN
+
+i Info → To sign in with credentials on the command line, use 'docker login -u <username>'
+         
+
+Your one-time device confirmation code is: XXXX-XXXX
+Press ENTER to open your browser or submit your device code here: https://login.docker.com/activate
+
+Waiting for authentication in the browser…
+Login Succeeded
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/health-test % docker build -t flask-app:v1 ~/VSCodes/ASKK-25988/Lab2/hello-python/
+[+] Building 5.6s (10/10) FINISHED                                                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile                                                                 0.0s
+ => => transferring dockerfile: 195B                                                                                 0.0s
+ => [internal] load metadata for docker.io/library/python:3.11-slim                                                  0.0s
+ => [internal] load .dockerignore                                                                                    0.0s
+ => => transferring context: 2B                                                                                      0.0s
+ => [1/5] FROM docker.io/library/python:3.11-slim@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea  0.0s
+ => => resolve docker.io/library/python:3.11-slim@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea  0.0s
+ => [internal] load build context                                                                                    0.0s
+ => => transferring context: 662B                                                                                    0.0s
+ => CACHED [2/5] WORKDIR /app                                                                                        0.0s
+ => [3/5] COPY requirements.txt .                                                                                    0.0s
+ => [4/5] RUN pip install --no-cache-dir -r requirements.txt                                                         4.8s
+ => [5/5] COPY . .                                                                                                   0.0s 
+ => exporting to image                                                                                               0.7s 
+ => => exporting layers                                                                                              0.5s 
+ => => exporting manifest sha256:069d7a9b8f756d1c6b0f6f67b0822a1ed79a73164b89e0d6a494ac09275f9dd1                    0.0s 
+ => => exporting config sha256:abf75881156061ad5d1078fc3ee0daff8a860be16a2afa3fb2d92300510baecd                      0.0s 
+ => => exporting attestation manifest sha256:9dac2923fc2b4632d5b692904a295b9839ed3b1ac30874e5121a40e6658fe195        0.0s 
+ => => exporting manifest list sha256:faa8dfcd2bb6f2a6e7512338245c4199f3637ef14bfddf73d30a87ebc3bbec70               0.0s
+ => => naming to docker.io/library/flask-app:v1                                                                      0.0s
+ => => unpacking to docker.io/library/flask-app:v1                                                                   0.1s
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/health-test % docker tag flask-app:v1 mewosh/flask-app:v1
+~/VSCodes/ASKK-25988/Lab2/health-test % 
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/health-test % docker tag flask-app:v1 mewosh/flask-app:latest
+~/VSCodes/ASKK-25988/Lab2/health-test % 
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/health-test % docker push mewosh/flask-app:v1
+The push refers to repository [docker.io/mewosh/flask-app]
+7ca0c331ecfd: Mounted from library/python 
+5c8bd50a4801: Pushed 
+1fa761c54cb1: Pushed 
+d038218272df: Pushed 
+bbeda6b4abb7: Mounted from library/postgres 
+73cdf02a38bd: Pushed 
+9eb0fb93ee08: Mounted from library/python 
+a96ffb137eb3: Pushed 
+73a63ac3ec4a: Mounted from library/python 
+v1: digest: sha256:faa8dfcd2bb6f2a6e7512338245c4199f3637ef14bfddf73d30a87ebc3bbec70 size: 856
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/health-test % docker push mewosh/flask-app:latest
+The push refers to repository [docker.io/mewosh/flask-app]
+73a63ac3ec4a: Layer already exists 
+bbeda6b4abb7: Layer already exists 
+5c8bd50a4801: Layer already exists 
+a96ffb137eb3: Layer already exists 
+1fa761c54cb1: Already exists 
+d038218272df: Layer already exists 
+9eb0fb93ee08: Layer already exists 
+7ca0c331ecfd: Layer already exists 
+73cdf02a38bd: Layer already exists 
+latest: digest: sha256:faa8dfcd2bb6f2a6e7512338245c4199f3637ef14bfddf73d30a87ebc3bbec70 size: 856
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/health-test % docker rmi mewosh/flask-app:v1 mewosh/flask-app:latest
+Untagged: mewosh/flask-app:v1
+Untagged: mewosh/flask-app:latest
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/health-test % docker pull mewosh/flask-app:v1
+v1: Pulling from mewosh/flask-app
+Digest: sha256:faa8dfcd2bb6f2a6e7512338245c4199f3637ef14bfddf73d30a87ebc3bbec70
+Status: Downloaded newer image for mewosh/flask-app:v1
+docker.io/mewosh/flask-app:v1
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/health-test % docker run --rm mewosh/flask-app:v1
+ * Serving Flask app 'app'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.17.0.2:5000
+Press CTRL+C to quit
+```
+
+**Screenshot:**
+
+![Obraz na Docker Hub i pobranie go](images/image-8.png)
+
+Rys. 9 - Obraz na Docker Hub i pobranie go.
+
+![docker hub](images/image-9.png)
+
+Rys. 10 - Obraz widoczny na portalu Docker Hub.
+
+---
+
+##### Zadania do samodzielnego wykonania
+
+##### Zadanie 1 — Dockerfile dla Django
+
+**Opis:** Stworzono plik `Dockerfile` dla aplikacji Django z folderu `supporting-materials/examples/04-django`, zbudowano obraz i uruchomiono kontener.
+
+**Użyte polecenia:**
+
+```zsh
+cd ~/VSCodes/ASKK-25988/Lab2/04-django
+
+docker build -t django-open-meteo .
+docker run -d --name django-open-meteo -p 8000:8000 -e "DJANGO_SECRET_KEY=change-me-in-prod" django-open-meteo
+```
+
+**Wynik działania:**
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/health-test % cd ~/VSCodes/ASKK-25988/Lab2/04-django 
+~/VSCodes/ASKK-25988/Lab2/04-django % 
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/04-django % docker build -t django-open-meteo .
+[+] Building 24.0s (12/12) FINISHED                                                                  docker:desktop-linux
+ => [internal] load build definition from Dockerfile                                                                 0.0s
+ => => transferring dockerfile: 599B                                                                                 0.0s
+ => [internal] load metadata for docker.io/library/python:3.12-slim                                                  1.8s
+ => [auth] library/python:pull token for registry-1.docker.io                                                        0.0s
+ => [internal] load .dockerignore                                                                                    0.0s
+ => => transferring context: 2B                                                                                      0.0s
+ => [1/6] FROM docker.io/library/python:3.12-slim@sha256:b18b261e1b4974b4f321451ad5251ded85abb22c2b8b262da527dda1d  10.2s
+ => => resolve docker.io/library/python:3.12-slim@sha256:b18b261e1b4974b4f321451ad5251ded85abb22c2b8b262da527dda1d0  0.0s
+ => => sha256:64074ecd150a3526f7ef1af3128b9186744abfb9dc3d1c3e87c11c1ea880cbd0 251B / 251B                           0.2s
+ => => sha256:b41621e272b0b306c196fabab6f5e0132d1c13f3c929bfb63455191fa509e311 12.06MB / 12.06MB                     3.1s
+ => => sha256:0922d1fc1a5f7baa280015c744bb0be989e6e146a9181c04d2971e1273416844 1.27MB / 1.27MB                       3.3s
+ => => sha256:2b70e040f7d132c8d366ee0223462552686510fb372ea5a83822973c30f19e36 30.21MB / 30.21MB                     9.6s
+ => => extracting sha256:2b70e040f7d132c8d366ee0223462552686510fb372ea5a83822973c30f19e36                            0.4s
+ => => extracting sha256:0922d1fc1a5f7baa280015c744bb0be989e6e146a9181c04d2971e1273416844                            0.0s
+ => => extracting sha256:b41621e272b0b306c196fabab6f5e0132d1c13f3c929bfb63455191fa509e311                            0.2s
+ => => extracting sha256:64074ecd150a3526f7ef1af3128b9186744abfb9dc3d1c3e87c11c1ea880cbd0                            0.0s
+ => [internal] load build context                                                                                    0.0s
+ => => transferring context: 155.83kB                                                                                0.0s
+ => [2/6] RUN apt-get update && apt-get install -y --no-install-recommends     curl     ca-certificates     bash     4.9s
+ => [3/6] WORKDIR /app                                                                                               0.0s 
+ => [4/6] COPY requirements.txt /app/                                                                                0.0s 
+ => [5/6] RUN pip install --no-cache-dir -r requirements.txt                                                         5.4s 
+ => [6/6] COPY . /app/                                                                                               0.0s 
+ => exporting to image                                                                                               1.6s 
+ => => exporting layers                                                                                              0.9s 
+ => => exporting manifest sha256:09b9d59947cb5c7454735ddbea8bc914eeef9b4158d83a41d98a43e5799b257a                    0.0s 
+ => => exporting config sha256:fe038ccd710947737918bb21b009c6f277275c9d9bbf625a00585ed403ca791f                      0.0s 
+ => => exporting attestation manifest sha256:30d5cf034a9f8fc4d0ecaec330b1e9f897d4dbf3a9e4525522dc07bac3a6b75c        0.0s 
+ => => exporting manifest list sha256:1ee94125ecb5ae966d1e3f11e26726065f39ca76dad553765eeaf8f699430631               0.0s
+ => => naming to docker.io/library/django-open-meteo:latest                                                          0.0s
+ => => unpacking to docker.io/library/django-open-meteo:latest                                                       0.6s
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/04-django % docker run -d --name django-open-meteo -p 8000:8000 -e "DJANGO_SECRET_KEY=change-me-in-prod" django-open-meteo
+0c7373b1ffa7d18ebbfcedc60a510edd9067390df38d079561a4afad077c2679
+```
+
+**Screenshot:**
+
+![dzialajace django](images/image-10.png)
+
+Rys. 11 - Działająca aplikacja Django.
+
+---
+
+##### Zadanie 2 — Multi-stage dla Pythona
+
+**Opis:** Stworzono zoptymalizowany obraz multi-stage dla prostego skryptu Python z cachowaniem oraz tworzeniem użytkownika i grupy.
+
+**Użyte polecenia:**
+
+```zsh
+mkdir -p ~/VSCodes/ASKK-25988/Lab2/python-multistage && cd ~/VSCodes/ASKK-25988/Lab2/python-multistage
+
+docker build -t python-multistage .
+docker run --rm --name python-multistage python-multistage
+```
+
+**Wynik działania:**
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/04-django % mkdir -p ~/VSCodes/ASKK-25988/Lab2/python-multistage && cd ~/VSCodes/ASKK-25988/Lab2/python-multistage
+~/VSCodes/ASKK-25988/Lab2/python-multistage % 
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/python-multistage % docker build -t python-multistage .
+[+] Building 8.1s (13/13) FINISHED                                                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile                                                                 0.0s
+ => => transferring dockerfile: 942B                                                                                 0.0s
+ => [internal] load metadata for docker.io/library/python:3.11-slim                                                  0.0s
+ => [internal] load .dockerignore                                                                                    0.0s
+ => => transferring context: 2B                                                                                      0.0s
+ => [internal] load build context                                                                                    0.0s
+ => => transferring context: 1.51kB                                                                                  0.0s
+ => [builder 1/5] FROM docker.io/library/python:3.11-slim@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5  0.0s
+ => => resolve docker.io/library/python:3.11-slim@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea  0.0s
+ => CACHED [builder 2/5] WORKDIR /app                                                                                0.0s
+ => [builder 3/5] RUN python -m venv /opt/venv                                                                       2.7s
+ => [runner 3/5] RUN groupadd -g 10001 appuser &&     useradd -u 10001 -g appuser -s /bin/sh appuser                 0.2s
+ => [builder 4/5] COPY requirements.txt .                                                                            0.0s
+ => [builder 5/5] RUN pip install --no-cache-dir --upgrade pip &&     pip install --no-cache-dir -r requirements.tx  4.1s
+ => [runner 4/5] COPY --from=builder /opt/venv /opt/venv                                                             0.1s
+ => [runner 5/5] COPY --chown=appuser:appuser . .                                                                    0.0s 
+ => exporting to image                                                                                               0.9s 
+ => => exporting layers                                                                                              0.7s 
+ => => exporting manifest sha256:7d5e2e0a0c06c7e2bddbafcaff634bea0d9bbb29980cf29c8be020dedc211248                    0.0s 
+ => => exporting config sha256:76b90a6dcd92b951b471e919c1f0fbb5e4d3429773766c39eee9be31e4f1542d                      0.0s 
+ => => exporting attestation manifest sha256:efee3df8d587c914f1c1c3e0f2254f5223036a1612720b8858d0d10855942b14        0.0s
+ => => exporting manifest list sha256:930ad4b89bda198d44026e20ab3ce4103032d763e1b01e069ee918c84a2e77ac               0.0s
+ => => naming to docker.io/library/python-multistage:latest                                                          0.0s
+ => => unpacking to docker.io/library/python-multistage:latest                                                       0.2s
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/python-multistage % docker run --rm --name python-multistage python-multistage
+Post title: sunt aut facere repellat provident occaecati excepturi optio reprehenderit
+Post body: quia et suscipit
+suscipit recusandae consequuntur expedita et cum
+reprehenderit molestiae ut ut quas totam
+nostrum rerum est autem sunt rem eveniet architecto
+```
+
+**Screenshot:**
+
+![wynik skryptu](images/image-11.png)
+
+Rys. 12 - Wynik uruchomienia prostego skryptu Python po multi-stage buildzie.
+
+---
+
+##### Zadanie 3 — Optymalizacja rozmiaru
+
+**Opis:** Zoptymalizowano obraz z ćwiczenia 1.3 dodając do niego `.dockerignore`, używając multi-stage build i zmieniając obraz z wersji `slim` na `alpine`. Dzięki zastosowanym technikom uzyskano obraz prawie o połowę lżejszy.
+
+**Użyte polecenia:**
+
+```zsh
+cd ~/VSCodes/ASKK-25988/Lab2/hello-python 
+
+docker build -t hello-python:unoptimized -f Dockerfile .
+docker build -t hello-python:optimized -f Dockerfile.optimized .
+
+docker images hello-python
+```
+
+**Wynik działania:**
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/python-multistage % cd ~/VSCodes/ASKK-25988/Lab2/hello-python 
+~/VSCodes/ASKK-25988/Lab2/hello-python % 
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/hello-python % docker build -t hello-python:unoptimized -f Dockerfile .
+[+] Building 7.4s (10/10) FINISHED                                                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile                                                                 0.0s
+ => => transferring dockerfile: 195B                                                                                 0.0s
+ => [internal] load metadata for docker.io/library/python:3.11-slim                                                  7.2s
+ => [internal] load .dockerignore                                                                                    0.0s
+ => => transferring context: 2B                                                                                      0.0s
+ => [1/5] FROM docker.io/library/python:3.11-slim@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea  0.0s
+ => => resolve docker.io/library/python:3.11-slim@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea  0.0s
+ => [internal] load build context                                                                                    0.0s
+ => => transferring context: 1.06kB                                                                                  0.0s
+ => CACHED [2/5] WORKDIR /app                                                                                        0.0s
+ => CACHED [3/5] COPY requirements.txt .                                                                             0.0s
+ => CACHED [4/5] RUN pip install --no-cache-dir -r requirements.txt                                                  0.0s
+ => [5/5] COPY . .                                                                                                   0.0s
+ => exporting to image                                                                                               0.1s
+ => => exporting layers                                                                                              0.0s
+ => => exporting manifest sha256:09dc2b04391131df33588fff6c6035df09bfa92693bfcfeeb6656f23ffef3206                    0.0s
+ => => exporting config sha256:8acc0fb3897a1552e6ca8b8022a09f8557c11e3b3ffd94d77ed8655af515a585                      0.0s
+ => => exporting attestation manifest sha256:80a5c93fd0e3b9158fa24607f946e4df5db0c60686dc0892f70ca00fbea88025        0.0s
+ => => exporting manifest list sha256:987022ff4d31fa6e28f19ca65648cbc4020ef8772790af717198f1f5f1c7721c               0.0s
+ => => naming to docker.io/library/hello-python:unoptimized                                                          0.0s
+ => => unpacking to docker.io/library/hello-python:unoptimized                                                       0.0s
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/hello-python % docker build -t hello-python:optimized -f Dockerfile.optimized .
+[+] Building 0.3s (13/13) FINISHED                                                                   docker:desktop-linux
+ => [internal] load build definition from Dockerfile.optimized                                                       0.0s
+ => => transferring dockerfile: 974B                                                                                 0.0s
+ => [internal] load metadata for docker.io/library/python:3.11-alpine                                                0.0s
+ => [internal] load .dockerignore                                                                                    0.0s
+ => => transferring context: 65B                                                                                     0.0s
+ => [builder 1/5] FROM docker.io/library/python:3.11-alpine@sha256:d9368b3a5ac59afea7b5d4f2e2aea0941dbf9fdee9c369c5  0.0s
+ => => resolve docker.io/library/python:3.11-alpine@sha256:d9368b3a5ac59afea7b5d4f2e2aea0941dbf9fdee9c369c5bec00b98  0.0s
+ => [internal] load build context                                                                                    0.0s
+ => => transferring context: 103B                                                                                    0.0s
+ => CACHED [builder 2/5] WORKDIR /app                                                                                0.0s
+ => CACHED [runner 3/5] RUN addgroup -g 10001 -S appuser &&     adduser -u 10001 -S -D -G appuser -h /app appuser    0.0s
+ => CACHED [builder 3/5] RUN python -m venv /opt/venv                                                                0.0s
+ => CACHED [builder 4/5] COPY requirements.txt .                                                                     0.0s
+ => CACHED [builder 5/5] RUN pip install --no-cache-dir --upgrade pip &&     pip install --no-cache-dir -r requirem  0.0s
+ => CACHED [runner 4/5] COPY --from=builder /opt/venv /opt/venv                                                      0.0s
+ => [runner 5/5] COPY --chown=appuser:appuser . .                                                                    0.0s
+ => exporting to image                                                                                               0.1s
+ => => exporting layers                                                                                              0.0s
+ => => exporting manifest sha256:2fa2a58ef2079a4507a864cbfada51f4a500bd7787956db63d2cafcd70362fe5                    0.0s
+ => => exporting config sha256:3f2db547332edcb74db877b600c508d428569adcc737d6ebf3cd503f22355598                      0.0s
+ => => exporting attestation manifest sha256:8ae2e17b2b091bb1752a84f5ba2f1cad36768c6ae86a87f63cd3e1c2b4c9e0fe        0.0s
+ => => exporting manifest list sha256:897ae613839fd1cafac62c32d1aa72e59ea2b862f686079706c5d0569c3a23c6               0.0s
+ => => naming to docker.io/library/hello-python:optimized                                                            0.0s
+ => => unpacking to docker.io/library/hello-python:optimized                                                         0.0s
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab2/hello-python % docker images hello-python                                      
+                                                                                                      i Info →   U  In Use
+IMAGE                      ID             DISK USAGE   CONTENT SIZE   EXTRA
+hello-python:optimized     897ae613839f        144MB         33.6MB        
+hello-python:unoptimized   987022ff4d31        242MB         52.7MB        
+hello-python:v1            4a169700acc1        213MB         45.9MB        
+```
+
+**Screenshot:**
+
+![porownanie rozmiaru](images/image-13.png)
+
+Rys. 13 - Porównanie niezoptymalizowanego obrazu z ćwiczenia 1.3 (`hello-python:unoptimized`) ze zoptymalizowaną wersją (`hello-python:optimized`) - widać znaczącą różnicę w rozmiarze (zoptymalizowany obraz jest o 98 MB lżejszy).
+
+---
+
 #### 4. Pliki konfiguracyjne
 
 ##### Dockerfile
 
+##### Zadanie 1
+
 ```dockerfile
-# [WKLEJ TUTAJ ZAWARTOŚĆ PLIKU Dockerfile]
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DJANGO_DEBUG=1 \
+    DJANGO_ALLOWED_HOSTS=* \
+    TZ=Europe/Warsaw
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    bash \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . /app/
+
+EXPOSE 8000
+
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"]
+```
+
+##### Zadanie 2
+
+```dockerfile
+# Obraz do budowania
+FROM python:3.11-slim AS builder
+
+# Wyłączenie tworzenia skompilowanego kodu bajtowego, celem oszczędzania miejsca na dysku i zmniejszenia operacji I/O
+ENV PYTHONDONTWRITEBYTECODE=1
+
+WORKDIR /app
+
+# Środowisko wirtualne
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Instalacja zależności w celu umożliwienia ich cachowania
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+
+# Obraz dla runtime
+FROM python:3.11-slim AS runner
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/opt/venv/bin:$PATH"
+
+WORKDIR /app
+
+# Utworzenie grupy i użytkownika niebędącego rootem dla bezpieczeństwa
+RUN groupadd -g 10001 appuser && \
+    useradd -u 10001 -g appuser -s /bin/sh appuser
+
+COPY --from=builder /opt/venv /opt/venv
+COPY --chown=appuser:appuser . .
+
+USER appuser
+
+CMD ["python", "main.py"]
+```
+
+##### Zadanie 3
+
+`Dockerfile` przed optymalizacją:
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+EXPOSE 5000
+CMD ["python", "app.py"]
+```
+
+`Dockerfile` po optymalizacji:
+```dockerfile
+# Obraz do budowania
+FROM python:3.11-alpine AS builder
+
+# Wyłączenie tworzenia skompilowanego kodu bajtowego, celem oszczędzania miejsca na dysku i zmniejszenia operacji I/O
+ENV PYTHONDONTWRITEBYTECODE=1
+
+WORKDIR /app
+
+# Środowisko wirtualne
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Instalacja zależności w celu umożliwienia ich cachowania
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+
+# Obraz dla runtime
+FROM python:3.11-alpine AS runner
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/opt/venv/bin:$PATH"
+
+WORKDIR /app
+
+# Utworzenie grupy i użytkownika niebędącego rootem dla bezpieczeństwa
+RUN addgroup -g 10001 -S appuser && \
+    adduser -u 10001 -S -D -G appuser -h /app appuser
+
+COPY --from=builder /opt/venv /opt/venv
+COPY --chown=appuser:appuser . .
+
+EXPOSE 5000
+
+USER appuser
+
+CMD ["python", "main.py"]
 ```
 
 ##### docker-compose.yaml
 
 ```yaml
-# [WKLEJ TUTAJ ZAWARTOŚĆ PLIKU docker-compose.yaml]
+# -brak-
 ```
 
 ##### Inne pliki
 
+##### Zadanie 2
+
+`main.py`:
+```py
+import requests
+
+def fetch_sample_data():
+    url = 'https://jsonplaceholder.typicode.com/posts/1'
+
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+
+        data = response.json()
+        print(f"Post title: {data.get('title')}")
+        print(f"Post body: {data.get('body')}")
+
+    except requests.exceptions.RequestException as err:
+        print(f'Error fetching data: {err}')
+
+
+if __name__ == '__main__':
+    fetch_sample_data()
 ```
-# [WKLEJ TUTAJ ZAWARTOŚĆ INNYCH ISTOTNYCH PLIKÓW, NP. .env, nginx.conf ITP.]
+
+`requirements.txt`:
+```
+requests==2.31.0
+```
+
+##### Zadanie 3
+
+`.dockerignore`:
+```dockerignore
+Dockerfile
+.dockerignore
 ```
 
 ---
@@ -785,18 +1568,16 @@ Hello from Node.js v20.20.2!%
 
 | Problem | Rozwiązanie |
 |---------|-------------|
-| Krok Dockerfile `RUN npm ci --only=production` w ćwiczeniu 4.2 zakończony błędem <br/> `=> ERROR [builder 4/4] RUN npm ci --only=production 0.4s` <br/> `=> [stage-1 3/5] WORKDIR /app 0.0s` <br/> `------` <br/> `> [builder 4/4] RUN npm ci --only=production:` <br/> ``0.202 npm warn config only Use `--omit=dev` to omit dev dependencies from the install.`` <br/> `0.376 npm error code EUSAGE` <br/> `0.376 npm error` <br/> ``0.376 npm error The `npm ci` command can only install with an existing package-lock.json or`` <br/> `0.376 npm error npm-shrinkwrap.json with lockfileVersion >= 1. Run an install with npm@5 or` <br/> `0.376 npm error later to generate a package-lock.json file, then try again.` | Wygenerowano plik `package-lock.json` na lokalnej maszynie poleceniem `npm install` i poprawiono plik `Dockerfile` aby polecenie `npm ci` korzystało z nowej konwencji `--omit=dev` zamiast przestarzałej `--only=production`  |
-| [OPIS PROBLEMU 2] | [JAK ZOSTAŁ ROZWIĄZANY] |
+| Krok Dockerfile `RUN npm ci --only=production` w ćwiczeniu 4.2 zakończony błędem <br/> `=> ERROR [builder 4/4] RUN npm ci --only=production 0.4s` <br/> `=> [stage-1 3/5] WORKDIR /app 0.0s` <br/> `------` <br/> `> [builder 4/4] RUN npm ci --only=production:` <br/> ``0.202 npm warn config only Use `--omit=dev` to omit dev dependencies from the install.`` <br/> `0.376 npm error code EUSAGE` <br/> `0.376 npm error` <br/> ``0.376 npm error The `npm ci` command can only install with an existing package-lock.json or`` <br/> `0.376 npm error npm-shrinkwrap.json with lockfileVersion >= 1. Run an install with npm@5 or` <br/> `0.376 npm error later to generate a package-lock.json file, then try again.` | Wygenerowano plik `package-lock.json` na lokalnej maszynie poleceniem `npm install` i poprawiono plik `Dockerfile` aby polecenie `npm ci` korzystało z nowej konwencji `--omit=dev` zamiast przestarzałej `--only=production` |
 
 ---
 
 #### 6. Wnioski
 
-[Podsumowanie — czego się nauczyłeś/aś, jakie wnioski wynikają z przeprowadzonych ćwiczeń, co było najtrudniejsze, co najciekawsze.]
+W ramach laboratorium nauczyłem się konstruować plik Dockerfile od podstaw, w tym używać instrukcji: `FROM`, `RUN`, `COPY`, `ADD`, `WORKDIR`, `ENV`, `ARG`, `CMD`, `ENTRYPOINT`. Zdobyłem również wiedzę jak optymalizować obrazy Dockera i publikować je na platformie Docker Hub. Podczas laboratorium udowodniono jak ważna jest kolejność instrukcji w `Dockerfile`. W momencie gdy jest ona prawidłowa, można skorzystać z mechanizmów cachowania, które znacznie przyspieszają czas budowania obrazu. Pokazano również jak ważna jest optymalizacja obrazów (w tym multi-stage build) w kontekście zmniejszenia rozmiaru obrazu. W trakcie laboratorium nie napotkano większych problemów a najciekszawszy był proces publikowania własnego obrazu na platformie Docker Hub i późniejsza weryfikacja, że rzeczywiście można go pobrać i uruchomić.
 
 ---
 
 #### 7. Bibliografia / źródła
 
 - [Docker Documentation](https://docs.docker.com/)
-- [INNE WYKORZYSTANE ŹRÓDŁA]
