@@ -90,7 +90,7 @@ local     projekt-elegancki_db_data
 
 **Screenshot:**
 
-![Wynik docker volume inspect](image.png)
+![Wynik docker volume inspect](images/image.png)
 
 Rys. 1 - Wynik `docker volume inspect`.
 
@@ -170,7 +170,7 @@ temp
 
 **Screenshot:**
 
-![Demonstracja trwałości danych z wolumenem vs bez](image-1.png)
+![Demonstracja trwałości danych z wolumenem vs bez](images/image-1.png)
 
 Rys. 2 - Demonstracja trwałości danych z wolumenem vs bez. W pierwszym przypadku dane przetrwały na wolumenie mimo tego, że kontener, z którego zostały utworzone został wcześniej usunięty. W drugim przypadku dane przetrwały restart kontenera ale jego usunięcia i próby utworzenia nowego identycznego kontenera już nie.
 
@@ -258,7 +258,7 @@ e869a4b9ca31881c2f40415cbbe5447248758b32d4ee7d8b46db831995c2bad2
 
 **Screenshot:**
 
-![Strona serwowana z zamontowanego katalogu](image-2.png)
+![Strona serwowana z zamontowanego katalogu](images/image-2.png)
 
 Rys. 3 - Strona serwowana z zamontowanego katalogu.
 
@@ -447,7 +447,7 @@ dev
 
 **Screenshot:**
 
-![Hot-reload — zmiana kodu widoczna bez restartu](image-3.png)
+![Hot-reload — zmiana kodu widoczna bez restartu](images/image-3.png)
 
 Rys. 4 - Hot-reload — zmiana kodu widoczna bez restartu.
 
@@ -588,11 +588,11 @@ add5d6dbeca9be54b528459858877a90398f3e6833959a1e708c2762892a9a98
 
 **Screenshot:**
 
-![Tabela studenci w PostgreSQL](image-4.png)
+![Tabela studenci w PostgreSQL](images/image-4.png)
 
 Rys. 5 - Tabela studenci w PostgreSQL.
 
-![Dane zachowane po usunięciu i ponownym uruchomieniu kontenera](image-5.png)
+![Dane zachowane po usunięciu i ponownym uruchomieniu kontenera](images/image-5.png)
 
 Rys. 6 - Dane zachowane po usunięciu i ponownym uruchomieniu kontenera.
 
@@ -811,9 +811,893 @@ writer
 
 **Screenshot:**
 
-![Współdzielenie danych między kontenerami](image-6.png)
+![Współdzielenie danych między kontenerami](images/image-6.png)
 
 Rys. 7 - Współdzielenie danych między kontenerami.
+
+---
+
+##### Ćwiczenie 5.1 — Backup wolumenu
+
+**Opis:** Utworzono backup wolumenu i upewniono się, że nie jest pusty.
+
+**Użyte polecenia:**
+
+```zsh
+# Upewnij się, że wolumen pgdata ma dane
+docker exec -it postgres-new psql -U postgres -d studenci -c "SELECT * FROM studenci;"
+
+# Backup do pliku tar
+docker run --rm \
+  -v pgdata1:/source:ro \
+  -v $(pwd):/backup \
+  ubuntu tar czf /backup/pgdata1-backup.tar.gz -C /source .
+
+ls -lh pgdata1-backup.tar.gz
+```
+
+**Wynik działania:**
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker exec -it postgres-new psql -U postgres -d studenci -c "SELECT * FROM studenci;"
+ id | imie | nazwisko | nr_indeksu 
+----+------+----------+------------
+  1 | Jan  | Kowalski | 123456
+  2 | Anna | Nowak    | 654321
+(2 rows)
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker run --rm \
+  -v pgdata1:/source:ro \
+  -v $(pwd):/backup \
+  ubuntu tar czf /backup/pgdata1-backup.tar.gz -C /source .
+~/VSCodes/ASKK-25988/Lab3/python-dev % 
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % ls -lh pgdata1-backup.tar.gz
+-rw-r--r--  1 mewosh  staff   6.5M Nov 10 15:19 pgdata1-backup.tar.gz
+```
+
+---
+
+##### Ćwiczenie 5.2 — Restore wolumenu
+
+**Opis:** Wykorzystano backup utworzony w ćwiczeniu 5.1 do odtworzenia zapisanych w backupie danych w nowym wolumenie a następnie sprawdzono czy nowy wolumen zawiera te dane (tabelę `studenci`).
+
+**Użyte polecenia:**
+
+```zsh
+# Utwórz nowy wolumen
+docker volume create pgdata-restored
+
+# Restore z backupu
+docker run --rm \
+  -v pgdata-restored:/target \
+  -v $(pwd):/backup:ro \
+  ubuntu tar xzf /backup/pgdata1-backup.tar.gz -C /target
+
+# Uruchom PostgreSQL z przywróconym wolumenem
+docker stop postgres-new && docker rm postgres-new
+
+docker run -d --name postgres-restored \
+  -e POSTGRES_PASSWORD=secret \
+  -v pgdata-restored:/var/lib/postgresql/data \
+  -p 5432:5432 \
+  postgres:16-alpine
+
+sleep 3
+docker exec -it postgres-restored psql -U postgres -d studenci -c "SELECT * FROM studenci;"
+```
+
+**Wynik działania:**
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker volume create pgdata-restored
+pgdata-restored
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker run --rm \
+  -v pgdata-restored:/target \
+  -v $(pwd):/backup:ro \
+  ubuntu tar xzf /backup/pgdata1-backup.tar.gz -C /target
+~/VSCodes/ASKK-25988/Lab3/python-dev % 
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker stop postgres-new && docker rm postgres-new
+postgres-new
+postgres-new
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker run -d --name postgres-restored \
+  -e POSTGRES_PASSWORD=secret \
+  -v pgdata-restored:/var/lib/postgresql/data \
+  -p 5432:5432 \
+  postgres:16-alpine
+f1106d492da2a5b0414ff73af3a1a85dfc1168e6336100e0c888179b613adbbb
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker exec -it postgres-restored psql -U postgres -d studenci -c "SELECT * FROM studenci;"
+ id | imie | nazwisko | nr_indeksu 
+----+------+----------+------------
+  1 | Jan  | Kowalski | 123456
+  2 | Anna | Nowak    | 654321
+(2 rows)
+```
+
+**Screenshot:**
+
+![Dane przywrócone z backupu](images/image-7.png)
+
+Rys. 8 - Dane przywrócone z backupu.
+
+---
+
+##### Ćwiczenie 5.3 — Backup bazy danych (pg_dump)
+
+**Opis:** Stworzona dumpa (kopię) bazy danych PostgreSQL, zapisano go w pliku `sql` a następnie na podstawie dumpa stworzono identyczną kopię bazy danych i pokazano, że zawiera ona te same dane, co poprzednia baza.
+
+**Użyte polecenia:**
+
+```zsh
+# Backup logiczny (pg_dump)
+docker exec postgres-restored pg_dump -U postgres studenci > studenci_backup.sql
+
+cat studenci_backup.sql
+
+# Restore do nowej bazy
+docker exec -i postgres-restored psql -U postgres -c "CREATE DATABASE studenci_copy;"
+docker exec -i postgres-restored psql -U postgres studenci_copy < studenci_backup.sql
+docker exec postgres-restored psql -U postgres -d studenci_copy -c "SELECT * FROM studenci;"
+```
+
+**Wynik działania:**
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker exec postgres-restored pg_dump -U postgres studenci > studenci_backup.sql
+~/VSCodes/ASKK-25988/Lab3/python-dev % 
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % cat studenci_backup.sql
+--
+-- PostgreSQL database dump
+--
+
+\restrict 67JuliIjbkhMgsMYpWT9Rzjrwy5Oa5NbGhygvc3rGi7p4usPeoqSmtNuKVgCVcR
+
+-- Dumped from database version 16.15
+-- Dumped by pg_dump version 16.15
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: studenci; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.studenci (
+    id integer NOT NULL,
+    imie character varying(50),
+    nazwisko character varying(50),
+    nr_indeksu character varying(10)
+);
+
+
+ALTER TABLE public.studenci OWNER TO postgres;
+
+--
+-- Name: studenci_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.studenci_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.studenci_id_seq OWNER TO postgres;
+
+--
+-- Name: studenci_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.studenci_id_seq OWNED BY public.studenci.id;
+
+
+--
+-- Name: studenci id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.studenci ALTER COLUMN id SET DEFAULT nextval('public.studenci_id_seq'::regclass);
+
+
+--
+-- Data for Name: studenci; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.studenci (id, imie, nazwisko, nr_indeksu) FROM stdin;
+1	Jan	Kowalski	123456
+2	Anna	Nowak	654321
+\.
+
+
+--
+-- Name: studenci_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.studenci_id_seq', 2, true);
+
+
+--
+-- Name: studenci studenci_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.studenci
+    ADD CONSTRAINT studenci_pkey PRIMARY KEY (id);
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict 67JuliIjbkhMgsMYpWT9Rzjrwy5Oa5NbGhygvc3rGi7p4usPeoqSmtNuKVgCVcR
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker exec -i postgres-restored psql -U postgres -c "CREATE DATABASE studenci_copy;"
+CREATE DATABASE
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker exec -i postgres-restored psql -U postgres studenci_copy < studenci_backup.sql
+SET
+SET
+SET
+SET
+SET
+ set_config 
+------------
+ 
+(1 row)
+
+SET
+SET
+SET
+SET
+SET
+SET
+CREATE TABLE
+ALTER TABLE
+CREATE SEQUENCE
+ALTER SEQUENCE
+ALTER SEQUENCE
+ALTER TABLE
+COPY 2
+ setval 
+--------
+      2
+(1 row)
+
+ALTER TABLE
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker exec postgres-restored psql -U postgres -d studenci_copy -c "SELECT * FROM studenci;"
+ id | imie | nazwisko | nr_indeksu 
+----+------+----------+------------
+  1 | Jan  | Kowalski | 123456
+  2 | Anna | Nowak    | 654321
+(2 rows)
+```
+
+---
+
+##### Ćwiczenie 6.1 — Dane w pamięci RAM
+
+**Opis:** Uruchomiono kontener, który zapisuje dane w pamięci RAM wykorzystując mechanizm tmpfs o nadanym rozmiarze 100 MB.
+
+**Użyte polecenia:**
+
+```zsh
+# tmpfs — dane w RAM
+docker run --rm \
+  --tmpfs /tmp:size=100m \
+  ubuntu bash -c "
+    echo 'Dane wrażliwe: hasło123' > /tmp/secret.txt
+    cat /tmp/secret.txt
+    df -h /tmp
+  "
+
+# Po zakończeniu kontenera dane znikają z RAM
+```
+
+**Wynik działania:**
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker run --rm \ 
+  --tmpfs /tmp:size=100m \
+  ubuntu bash -c "
+    echo 'Dane wrażliwe: hasło123' > /tmp/secret.txt
+    cat /tmp/secret.txt
+    df -h /tmp
+  "
+Dane wrażliwe: hasło123
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           100M  4.0K  100M   1% /tmp
+```
+
+---
+
+##### Ćwiczenie 6.2 — Porównanie wydajności
+
+**Opis:** Porównano wydajność zapisu w tmpfs (RAM) i na wolumenie (dysku). Pamięć RAM powinna być znacznie szybsza od dysku, mimo to zaobserwowano odwrotne wyniki, ponadto wolumen wypadał jeszcze lepiej gdy polecenia uruchomiono ponownie. Problem jest spowodowany używaniem systemu macOS i Docker Desktop (na Windowsie problem również powinien występować). W środowisku Docker Desktop na macOS kontener nie działa natywnie na jądrze macOS, lecz wewnątrz ukrytej maszyny wirtualnej Linuxa. Zapis do tmpfs wymaga dynamicznej alokacji stron pamięci RAM wewnątrz maszyny wirtualnej oraz ciągłej synchronizacji stref pamięci z hiperwizorem macOS. Z kolei wolumen zapisuje dane do wirtualnego pliku dyskowego VM i intensywnie wykorzystuje mechanizm Page Cache Linuxa. Dzięki temu operacje zapisu na wolumenie są buforowane w pamięci podręcznej maszyny wirtualnej i natychmiast wracają jako zakończone sukcesem. W efekcie zapis na wolumenie korzysta z agresywnego buforowania I/O, podczas gdy tmpfs ponosi bezpośrednie koszty wirtualizacji pamięci RAM. Drugim podejrzanym była pamięć Swap, która była w wysokim użyciu a maszyny wirtualne są jednymi z pierwszych procesów, które trafiają do Swap, jednakże po restarcie macOS i całkowitym wyczyszczeniu Swap tmpfs wygrał nieznacznie tylko pierwszy test wydajnościowy, natomiast od drugiego i kolejnego testu ponownie zaczął wygrywać wolumen.
+
+**Użyte polecenia:**
+
+```zsh
+# Zapis na tmpfs (RAM)
+docker run --rm --tmpfs /data:size=100m ubuntu bash -c "
+  time dd if=/dev/zero of=/data/testfile bs=1M count=50 2>&1
+"
+
+# Zapis na volume (dysk)
+docker run --rm -v test-perf:/data ubuntu bash -c "
+  time dd if=/dev/zero of=/data/testfile bs=1M count=50 2>&1
+"
+
+docker volume rm test-perf
+```
+
+**Wynik działania:**
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker run --rm --tmpfs /data:size=100m ubuntu bash -c "
+  time dd if=/dev/zero of=/data/testfile bs=1M count=50 2>&1
+"
+50+0 records in
+50+0 records out
+52428800 bytes (52 MB, 50 MiB) copied, 0.0304755 s, 1.7 GB/s
+
+real	0m0.034s
+user	0m0.003s
+sys	0m0.030s
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker run --rm --tmpfs /data:size=100m ubuntu bash -c "
+  time dd if=/dev/zero of=/data/testfile bs=1M count=50 2>&1
+"                 
+50+0 records in
+50+0 records out
+52428800 bytes (52 MB, 50 MiB) copied, 0.0312055 s, 1.7 GB/s
+
+real	0m0.034s
+user	0m0.001s
+sys	0m0.026s
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker run --rm --tmpfs /data:size=100m ubuntu bash -c "
+  time dd if=/dev/zero of=/data/testfile bs=1M count=50 2>&1
+"
+50+0 records in
+50+0 records out
+52428800 bytes (52 MB, 50 MiB) copied, 0.0309775 s, 1.7 GB/s
+
+real	0m0.035s
+user	0m0.001s
+sys	0m0.034s
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker run --rm -v test-perf:/data ubuntu bash -c "
+  time dd if=/dev/zero of=/data/testfile bs=1M count=50 2>&1
+"
+50+0 records in
+50+0 records out
+52428800 bytes (52 MB, 50 MiB) copied, 0.0222887 s, 2.4 GB/s
+
+real	0m0.029s
+user	0m0.003s
+sys	0m0.025s
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker run --rm -v test-perf:/data ubuntu bash -c "     
+  time dd if=/dev/zero of=/data/testfile bs=1M count=50 2>&1
+"
+50+0 records in
+50+0 records out
+52428800 bytes (52 MB, 50 MiB) copied, 0.0132584 s, 4.0 GB/s
+
+real	0m0.020s
+user	0m0.000s
+sys	0m0.022s
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker run --rm -v test-perf:/data ubuntu bash -c "
+  time dd if=/dev/zero of=/data/testfile bs=1M count=50 2>&1
+"
+50+0 records in
+50+0 records out
+52428800 bytes (52 MB, 50 MiB) copied, 0.0132575 s, 4.0 GB/s
+
+real	0m0.018s
+user	0m0.001s
+sys	0m0.017s
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker volume rm test-perf
+test-perf
+```
+
+---
+
+##### Ćwiczenie 7.1 — Czyszczenie
+
+**Opis:** Usunięto nieużywane wolumeny i sprawdzono, czy zostały usunięte.
+
+**Użyte polecenia:**
+
+```zsh
+# Lista wolumenów
+docker volume ls
+
+# Zatrzymaj i usuń kontenery
+docker stop $(docker ps -q) 2>/dev/null
+docker rm $(docker ps -aq) 2>/dev/null
+
+# Usuń nieużywane wolumeny
+# Od Docker 23 samo `prune` usuwa tylko wolumeny anonimowe — `-a` usuwa też nazwane
+docker volume prune -a -f
+
+# Sprawdź
+docker volume ls
+docker system df
+```
+
+**Wynik działania:**
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker volume ls
+DRIVER    VOLUME NAME
+local     5cdb68c92322591ba117923b649f290fbabd02ff5f8cbd948acfacd7e08cf2fd
+local     86a43e00f515b172534031e13c62e83cbcb6dc48de66ac198863d7088c7f7e90
+local     1853ee0f008ffba0531978c5c4dc0c23f9fe066e6188799f0b438265aa7185fc
+local     act-Backend-tests-build-ac362f16af3a70c8ab44df492bb1ea1e34e3a064bb94ada01c613f52c88a087a
+local     act-Backend-tests-build-ac362f16af3a70c8ab44df492bb1ea1e34e3a064bb94ada01c613f52c88a087a-env
+local     act-toolcache
+local     esporthub_postgres_vol
+local     isilab2_mssql_vol
+local     isilab4_mssql_vol
+local     isilab5_mssql_vol
+local     isilab5_postgres_vol
+local     moje-dane
+local     mongodata
+local     mysqldata
+local     pgdata
+local     pgdata1
+local     pgdata-restored
+local     polchan_mssql_vol
+local     projekt-elegancki_db_data
+local     shared-logs
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker stop $(docker ps -q) 2>/dev/null
+~/VSCodes/ASKK-25988/Lab3/python-dev % 
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker rm $(docker ps -aq) 2>/dev/null
+f1106d492da2
+c8be95e8141d
+94c7aee4a4a9
+31c73ee45055
+0c7373b1ffa7
+de8ef3af532d
+2a68c66b8609
+5d1e640fce1a
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker volume prune -a -f
+Deleted Volumes:
+act-Backend-tests-build-ac362f16af3a70c8ab44df492bb1ea1e34e3a064bb94ada01c613f52c88a087a
+act-toolcache
+esporthub_postgres_vol
+mysqldata
+pgdata
+pgdata-restored
+pgdata1
+polchan_mssql_vol
+isilab2_mssql_vol
+moje-dane
+mongodata
+86a43e00f515b172534031e13c62e83cbcb6dc48de66ac198863d7088c7f7e90
+isilab5_postgres_vol
+shared-logs
+1853ee0f008ffba0531978c5c4dc0c23f9fe066e6188799f0b438265aa7185fc
+5cdb68c92322591ba117923b649f290fbabd02ff5f8cbd948acfacd7e08cf2fd
+act-Backend-tests-build-ac362f16af3a70c8ab44df492bb1ea1e34e3a064bb94ada01c613f52c88a087a-env
+isilab4_mssql_vol
+isilab5_mssql_vol
+projekt-elegancki_db_data
+
+Total reclaimed space: 2.261GB
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker volume ls
+DRIVER    VOLUME NAME
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/python-dev % docker system df
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          49        0         23.39GB   593.5MB (2%)
+Containers      0         0         0B        0B
+Local Volumes   0         0         0B        0B
+Build Cache     110       0         2.37GB    282.5MB
+```
+
+**Screenshot:**
+
+![Wynik czyszczenia wolumenów](images/image-8.png)
+
+Rys. 9 - Wynik czyszczenia wolumenów.
+
+---
+
+##### Zadania do samodzielnego wykonania
+
+##### Zadanie 1 — Redis z trwałymi danymi
+
+**Opis:** Uruchomiono kontener Redis z zamontowanym wolumenem i z wartością flagi `-appendonly yes`, która używana wbudowanego systemu AOF (Append Only File) do zapisywania wyników komend `SET`, `HSET`, `DEL` na dysku. Następnie usunięto kontener, utworzono nowy kontener z tym samym wolumenem i zweryfikowano, że dane przetrwały usunięcie kontenera.
+
+**Użyte polecenia:**
+
+```zsh
+# utworzenie wolumenu
+docker volume create redis_data
+
+# uruchomienie kontenera redis z zamontowanym wolumenem i flagą --appendonly yes
+docker run -d --name kontener-redis -v redis_data:/data redis redis-server --appendonly yes
+
+# dodanie kilku kluczy
+docker exec -it kontener-redis redis-cli SET uzytkownik:1 "Jan Kowalski"
+docker exec -it kontener-redis redis-cli SET uzytkownik:2 "Anna Nowak"
+docker exec -it kontener-redis redis-cli SET status "aktywny"
+
+# odczytanie kluczy
+docker exec -it kontener-redis redis-cli KEYS "*"
+
+# zatrzymanie i usunięcie kontenera
+docker stop kontener-redis && docker rm kontener-redis
+
+# uruchomienie nowego kontenera redis z poprzednio utworzonym wolumenem
+docker run -d --name nowy-kontener-redis -v redis_data:/data redis redis-server --appendonly yes
+
+# odczyt wartości kluczy i weryfikacja czy dane przetrwały usunięcie kontenera
+docker exec -it nowy-kontener-redis redis-cli GET uzytkownik:1
+docker exec -it nowy-kontener-redis redis-cli GET uzytkownik:2
+docker exec -it nowy-kontener-redis redis-cli GET status
+```
+
+**Wynik działania:**
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3 % docker volume create redis_data
+redis_data
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3 % docker run -d --name kontener-redis -v redis_data:/data redis redis-server --appendonly yes
+Unable to find image 'redis:latest' locally
+latest: Pulling from library/redis
+1a903db3ee72: Pull complete 
+8fad13c1f241: Pull complete 
+a473fb6d5527: Pull complete 
+4f4fb700ef54: Pull complete 
+acd43e9bebc3: Pull complete 
+491035d04227: Pull complete 
+f8f9bd1f23ad: Pull complete 
+397a493967e6: Download complete 
+981ac2639630: Download complete 
+Digest: sha256:1f88291b4c57bdf249f02eb085a8669889b2d2954e91d4de5118a5da6b78dd53
+Status: Downloaded newer image for redis:latest
+7a155929442bfdda3cfc57d074bffc27e53a6365e0983af8b6f7444d64d43d2b
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3 % docker exec -it kontener-redis redis-cli SET uzytkownik:1 "Jan Kowalski"
+docker exec -it kontener-redis redis-cli SET uzytkownik:2 "Anna Nowak"
+docker exec -it kontener-redis redis-cli SET status "aktywny"
+OK
+OK
+OK
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3 % docker exec -it kontener-redis redis-cli KEYS "*"
+1) "status"
+2) "uzytkownik:1"
+3) "uzytkownik:2"
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3 % docker stop kontener-redis && docker rm kontener-redis
+kontener-redis
+kontener-redis
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3 % docker run -d --name nowy-kontener-redis -v redis_data:/data redis redis-server --appendonly yes
+fef0067ca690ceb1f5e3d9cf2e3863b9823a56dd48d7c061322d30cb01be3c8f
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3 % docker exec -it nowy-kontener-redis redis-cli GET uzytkownik:1
+docker exec -it nowy-kontener-redis redis-cli GET uzytkownik:2
+docker exec -it nowy-kontener-redis redis-cli GET status
+"Jan Kowalski"
+"Anna Nowak"
+"aktywny"
+```
+
+**Screenshot:**
+
+![przetrwanie redis](images/image-9.png)
+
+Rys. 10 - Dane przetrwały usunięcie kontenera Redis.
+
+---
+
+##### Zadanie 2 — Serwer plików
+
+**Opis:** Uruchomiono serwer nginx serwujący pliki z katalogu na komputerze hosta, sprawdzono, czy w przeglądarce wyświetlana jest nowo utworzona domyślna strona `index.html`, następnie stworzono nową stronę `about.html` na katalogu hosta i sprawdzono czy jest ona od razu dostępna w przeglądarce bez konieczności restartu kontenera.
+
+**Użyte polecenia:**
+
+```zsh
+mkdir -p ~/VSCodes/ASKK-25988/Lab3/nginx-html && cd ~/VSCodes/ASKK-25988/Lab3/nginx-html
+
+echo "<h1>Strona testowa z hosta</h1>" > index.html
+
+docker run -d \
+  --name serwer-nginx \
+  -p 8080:80 \
+  -v ~/VSCodes/ASKK-25988/Lab3/nginx-html:/usr/share/nginx/html:ro \
+  nginx:alpine
+
+echo "<h2>Strona about</h2>" > ~/VSCodes/ASKK-25988/Lab3/nginx-html/about.html
+```
+
+**Wynik działania:**
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3 % mkdir -p ~/VSCodes/ASKK-25988/Lab3/nginx-html && cd ~/VSCodes/ASKK-25988/Lab3/nginx-html
+~/VSCodes/ASKK-25988/Lab3/nginx-html %
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/nginx-html % echo "<h1>Strona testowa z hosta</h1>" > index.html
+~/VSCodes/ASKK-25988/Lab3/nginx-html %
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/nginx-html % docker run -d \
+  --name serwer-nginx \
+  -p 8080:80 \
+  -v ~/VSCodes/ASKK-25988/Lab3/nginx-html:/usr/share/nginx/html:ro \
+  nginx:alpine
+b8c233242a6d24e14213f5efdde5218f0b8731221b5c431df4c9c17736d8d4df
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/nginx-html % echo "<h2>Strona about</h2>" > ~/VSCodes/ASKK-25988/Lab3/nginx-html/about.html
+~/VSCodes/ASKK-25988/Lab3/nginx-html %
+```
+
+**Screenshot:**
+
+![strona index](images/image-10.png)
+
+Rys. 11 - Strona `index.html` widoczna w przeglądarce po starcie kontenera.
+
+![nowa strona widoczna po dodaniu](images/image-11.png)
+
+Rys. 12 - Nowo utworzona na hoście strona `about.html` widoczna od razu w przeglądarce bez konieczności restartu kontenera.
+
+---
+
+##### Zadanie 3 — Automatyczny backup
+
+**Opis:** Utworzono skrypt bash robiący automatyczny backup wolumenu bazy danych i sprawdzono, czy backup został prawidłowo utworzony. Proces można byłoby zautomatyzować dodając chron joba, wykonującego skrypt w określonych interwałach np. co godzinę razem z przekierowaniem wyjścia terminala do dodatkowego pliku logu, na wypadek gdyby skrypt wygenerował błędy:
+
+```zsh
+crontab -e
+
+0 * * * * ~/VSCodes/ASKK-25988/Lab3/backup/backup_volume.sh pgdata ~/VSCodes/ASKK-25988/Lab3/backup/volume_backups >> /var/log/docker_backup.log 2>&1
+```
+
+**Użyte polecenia:**
+
+```zsh
+mkdir -p ~/VSCodes/ASKK-25988/Lab3/backup && cd ~/VSCodes/ASKK-25988/Lab3/backup
+
+docker volume create pgdata
+
+docker run -d --name postgres \
+  -e POSTGRES_PASSWORD=secret \
+  -e POSTGRES_DB=studenci \
+  -v pgdata:/var/lib/postgresql/data \
+  -p 5432:5432 \
+  postgres:16-alpine
+
+cat << 'EOF' > backup_volume.sh
+#!/usr/bin/env bash
+
+# Skrypt do automatycznego backupu wolumenu Docker
+# Użycie: ./backup_volume.sh <nazwa_wolumenu> [katalog_docelowy]
+
+set -euo pipefail
+
+# 1. Walidacja parametrów wejściowych
+VOLUME_NAME="${1:-}"
+BACKUP_DIR="${2:-./backups}"
+
+if [ -z "$VOLUME_NAME" ]; then
+    echo "Błąd: Nie podano nazwy wolumenu."
+    echo "Użycie: $0 <nazwa_wolumenu> [katalog_docelowy]"
+    exit 1
+fi
+
+# 2. Sprawdzenie, czy wolumen istnieje
+if ! docker volume inspect "$VOLUME_NAME" >/dev/null 2>&1; then
+    echo "Błąd: Wolumen '$VOLUME_NAME' nie istnieje."
+    exit 1
+fi
+
+# 3. Przygotowanie ścieżki i nazwy pliku backupu
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+BACKUP_FILENAME="${VOLUME_NAME}_${TIMESTAMP}.tar.gz"
+
+mkdir -p "$BACKUP_DIR"
+# Pobranie pełnej ścieżki do podmontowania w kontenerze pomocniczym
+ABS_BACKUP_DIR=$(cd "$BACKUP_DIR" && pwd)
+
+echo "-> Rozpoczynanie backupu wolumenu '$VOLUME_NAME'..."
+
+# 4. Wykonanie backupu za pomocą tymczasowego kontenera Alpine
+docker run --rm \
+    -v "$VOLUME_NAME":/volume:ro \
+    -v "$ABS_BACKUP_DIR":/backup \
+    alpine \
+    tar -czf "/backup/$BACKUP_FILENAME" -C /volume .
+
+echo "-> Kopia zapasowa została pomyślnie utworzona:"
+echo "   Plik: $ABS_BACKUP_DIR/$BACKUP_FILENAME"
+EOF
+
+chmod +x backup_volume.sh
+
+./backup_volume.sh pgdata ./volume_backups
+
+ls -l volume_backups
+```
+
+**Wynik działania:**
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/nginx-html % mkdir -p ~/VSCodes/ASKK-25988/Lab3/backup && cd ~/VSCodes/ASKK-25988/Lab3/backup
+~/VSCodes/ASKK-25988/Lab3/backup % 
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/backup % docker volume create pgdata
+pgdata
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/backup % docker run -d --name postgres \
+  -e POSTGRES_PASSWORD=secret \
+  -e POSTGRES_DB=studenci \
+  -v pgdata:/var/lib/postgresql/data \
+  -p 5432:5432 \
+  postgres:16-alpine
+cfd15086be94bdf51e9971e3c2b07cafdcd0efc04e9a3851a1adf76ac6b3dfd4
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/backup % >....                                                               
+if [ -z "$VOLUME_NAME" ]; then
+    echo "Błąd: Nie podano nazwy wolumenu."
+    echo "Użycie: $0 <nazwa_wolumenu> [katalog_docelowy]"
+    exit 1
+fi
+
+# 2. Sprawdzenie, czy wolumen istnieje
+if ! docker volume inspect "$VOLUME_NAME" >/dev/null 2>&1; then
+    echo "Błąd: Wolumen '$VOLUME_NAME' nie istnieje."
+    exit 1
+fi
+
+# 3. Przygotowanie ścieżki i nazwy pliku backupu
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+BACKUP_FILENAME="${VOLUME_NAME}_${TIMESTAMP}.tar.gz"
+
+mkdir -p "$BACKUP_DIR"
+# Pobranie pełnej ścieżki do podmontowania w kontenerze pomocniczym
+ABS_BACKUP_DIR=$(cd "$BACKUP_DIR" && pwd)
+
+echo "-> Rozpoczynanie backupu wolumenu '$VOLUME_NAME'..."
+
+# 4. Wykonanie backupu za pomocą tymczasowego kontenera Alpine
+docker run --rm \
+    -v "$VOLUME_NAME":/volume:ro \
+    -v "$ABS_BACKUP_DIR":/backup \
+    alpine \
+    tar -czf "/backup/$BACKUP_FILENAME" -C /volume .
+
+echo "-> Kopia zapasowa została pomyślnie utworzona:"
+echo "   Plik: $ABS_BACKUP_DIR/$BACKUP_FILENAME"
+EOF
+~/VSCodes/ASKK-25988/Lab3/backup % 
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/backup % chmod +x backup_volume.sh
+~/VSCodes/ASKK-25988/Lab3/backup % 
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/backup % ./backup_volume.sh pgdata ./volume_backups
+-> Rozpoczynanie backupu wolumenu 'pgdata'...
+Unable to find image 'alpine:latest' locally
+latest: Pulling from library/alpine
+a1c67c46f05a: Download complete 
+417332e4182f: Download complete 
+Digest: sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
+Status: Downloaded newer image for alpine:latest
+-> Kopia zapasowa została pomyślnie utworzona:
+   Plik: /Users/mewosh/VSCodes/ASKK-25988/Lab3/backup/volume_backups/pgdata_20261110_195935.tar.gz
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab3/backup % ls -l volume_backups
+total 13096
+-rw-r--r--  1 mewosh  staff  6703710 Nov 10 19:59 pgdata_20261110_195935.tar.gz
+```
+
+**Screenshot:**
+
+![utworzony backup](images/image-12.png)
+
+Rys. 13 - Wynik wykonania skryptu - został utworzony backup w folderze `volume_backups`.
 
 ---
 
@@ -822,19 +1706,19 @@ Rys. 7 - Współdzielenie danych między kontenerami.
 ##### Dockerfile
 
 ```dockerfile
-# [WKLEJ TUTAJ ZAWARTOŚĆ PLIKU Dockerfile]
+# - brak -
 ```
 
 ##### docker-compose.yaml
 
 ```yaml
-# [WKLEJ TUTAJ ZAWARTOŚĆ PLIKU docker-compose.yaml]
+# - brak -
 ```
 
 ##### Inne pliki
 
 ```
-# [WKLEJ TUTAJ ZAWARTOŚĆ INNYCH ISTOTNYCH PLIKÓW, NP. .env, nginx.conf ITP.]
+# - brak -
 ```
 
 ---
@@ -843,18 +1727,17 @@ Rys. 7 - Współdzielenie danych między kontenerami.
 
 | Problem | Rozwiązanie |
 |---------|-------------|
-| [OPIS PROBLEMU 1] | [JAK ZOSTAŁ ROZWIĄZANY] |
-| [OPIS PROBLEMU 2] | [JAK ZOSTAŁ ROZWIĄZANY] |
+| Polecenie:<br/>`echo "<h1>Strona z hosta!</h1>" > ~/VSCodes/ASKK-25988/Lab3/web-content/index.html` zakończone wynikiem:<br/>`zsh: event not found: </h1>` | Używany przeze mnie terminal Zsh interpertuje znak ! wewnątrz cudzysłowów "" jako trigger, który rozwija historię terminala. Następnie próbuje znaleźć event o nazwie </h1> co kończy się błędem. Rozwiązaniem jest umieszczenie polecenia wewnątrz pojedynczych cudzysłowów '', które potraktują znak ! jako zwykły tekst. |
+| Polecenie:<br/>`docker exec -it mongo mongosh -u admin -p secret --eval "`<br/>`use testdb;`<br/>`db.users.insertMany([`</br>`{name: 'Jan', age: 25},`<br/>`{name: 'Anna', age: 30}`<br/>`]);`<br/>`db.users.find().pretty();`<br/>`"` zwróciła tylko 1 wynik (efekt użycia polecenia `use testdb;`) zamiast wyniku wszystkich poleceń. | Gdy powłoka mongo (mongosh) zetknie się z pomocniczą komendą `use testdb;`, wykona ją, zwróci jej wynik i przestanie procesować kolejne polecenia. Aby uniknąć takiej sytuacji zamieniono `use testdb;` będącą pomocniczą komendą powłoki, na pełnoprawny skrypt JavaScript:<br/>`const db = db.getSiblingDB('testdb');`<br/>`db.users.insertMany([`<br/>`{name: 'Jan', age: 25},`<br/>`{name: 'Anna', age: 30}`<br/>`]);`<br/>`db.users.find();`<br/> aby umożliwić wykonanie wszystkich linijek kodu. Przy okazji usunięto przestarzałe wywołanie `pretty()`, ponieważ w nowych wersjach mongo zwracane wyniki są domyślnie formatowane w czytelny i przyjazny sposób. |
 
 ---
 
 #### 6. Wnioski
 
-[Podsumowanie — czego się nauczyłeś/aś, jakie wnioski wynikają z przeprowadzonych ćwiczeń, co było najtrudniejsze, co najciekawsze.]
+Nauczyłem się tworzyć i zarządzać wolumenami Docker, używać bind mounts do development (hot-reload), konfigurować bazy danych z trwałymi wolumenami, współdzielić dane między kontenerami, wykonywać backup i restore wolumenów używać tmpfs dla danych tymczasowych i czyścić nieużywane wolumeny. W trakcie laboratorium wykazano, że wolumeny, mimo efemeryczności kontenerów, pozwalają na trwałe przechowywanie danych, które przetrwają restart i usunięcie kontenera. Udowodniono również, że wolumeny potrafią być szybsze od mechanizmu tmpfs w zależności od używanego systemu operacyjnego i liczby warstw wirtualizacji pamięci RAM. W trakcie laboratorium nie napotkano większych problemów a najciekawsza była obserwacja aktualizacji plików zmienianych na zamontowanym katalogu hosta w czasie rzeczywistym.
 
 ---
 
 #### 7. Bibliografia / źródła
 
 - [Docker Documentation](https://docs.docker.com/)
-- [INNE WYKORZYSTANE ŹRÓDŁA]
