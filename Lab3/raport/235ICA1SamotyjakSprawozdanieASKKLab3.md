@@ -4,7 +4,7 @@
 
 **Temat:** Wolumeny i trwałość danych
 
-**Data wykonania:** 
+**Data wykonania:** 12.11.2026
 
 **Autor:** Miłosz Samotyjak
 
@@ -22,9 +22,17 @@ Praktyczne poznanie mechanizmów trwałego przechowywania danych w Docker: volum
 
 #### 2. Wstęp teoretyczny
 
-Wolumeny
+**Wolumeny Dockera**
 
-[Opcjonalnie — krótkie wprowadzenie teoretyczne dotyczące omawianych technologii/narzędzi, np. czym jest Docker, wolumeny, sieci itp.]
+Mechanizm służący do trwałego przechowywania danych generowanych i używanych przez kontenery. Domyślnie dane wewnątrz kontenera są powiązane z jego cyklem życia - jeśli zostanie on usunięty to usunięte zostaną również zapisane w nim pliki. Wolumeny istnieją poza cyklem życia kontenera a więc usunięcie kontenera nie usuwa wolumenów. Wolumeny działają szybciej niż zwykła warstwa zapisu kontenera i są łatwe do przenoszenia lub bezpiecznego backupu. Ten sam wolumen może być podłączony do kilku kontenerów jednocześnie. 
+
+**tmpfs**
+
+(ang. temporary file system) - mechanizm montowania pamięci tymczasowej, która jest przechowywana wyłącznie w pamięci RAM hosta lub w przestrzeni swap, a nie na dysku fizycznym. Dane umieszczone w tmpfs znikają natychmiast po zatrzymaniu lub usunięciu kontenera. Operacje odczytu i zapisu odbywają się z prędkością pamięci RAM, co czyni to rozwiązanie bardzo szybkim. Jednym z zastosowań tmpfs jest dostarczenie danych wrażliwych np. kluczy szyfrujących lub tokenów sesji, które nie powinny trafić na dysk, ani do warstwy zapisywalnej kontenera.
+
+**Backup**
+
+Proces tworzenia kopii zapasowej danych w celu zabezpieczenia ich przed utratą, która może nastąpić na skutek awarii sprzętu, błędu ludzkiego, ataku złośliwego oprogramowania lub zdarzeń losowych. Kopia pozwala przywrócić system lub dane do stanu z konkretnego momentu w przeszłości.
 
 ---
 
@@ -98,7 +106,7 @@ Rys. 1 - Wynik `docker volume inspect`.
 
 ##### Ćwiczenie 1.2 — Użycie wolumenu z kontenerem
 
-**Opis:** Uruchomiono kontener z obrazem ubuntu i podpiętym wolumenem utworzonym w ćwiczeniu 1.1 a następnie zapisano dane do pliku tekstowego w wolumenie. Na koniec uruchomiono nowy kontener próbujący odczytać wcześniej zapisany tekst i poprawnie została zwrócona zawartość wcześniej utworzonego pliku, co oznacza, że dane przetrwały w wolumenie.
+**Opis:** Uruchomiono kontener z obrazem ubuntu i zamontowanym wolumenem utworzonym w ćwiczeniu 1.1 a następnie zapisano dane do pliku tekstowego w wolumenie. Na koniec uruchomiono nowy kontener próbujący odczytać wcześniej zapisany tekst. Zawartość wcześniej utworzonego pliku została poprawnie zwrócona, co oznacza, że dane przetrwały w wolumenie.
 
 **Użyte polecenia:**
 
@@ -136,7 +144,7 @@ Mon Nov  9 19:55:53 UTC 2026
 
 ##### Ćwiczenie 1.3 — Efemeryczność bez wolumenu
 
-**Opis:** Utworzono kontener bez wolumenu i sprawdzono trwałość danych w przypadku podpięcia i niepodpięcia kontenera. Z podpiętym wolumenem dane przetrwały mimo usunięcia kontenera, natomiast bez wolumenu dane przetrwały restart kontenera, natomiast jego usunięcia i utworzenia na nowo identycznego kontenera już nie.
+**Opis:** Utworzono kontener bez wolumenu i sprawdzono trwałość danych w przypadku zamontowania i niezamontowania wolumenu. Z zamontowanym wolumenem dane przetrwały mimo usunięcia kontenera, natomiast bez wolumenu dane przetrwały restart kontenera, natomiast jego usunięcia i utworzenia na nowo identycznego kontenera już nie.
 
 **Użyte polecenia:**
 
@@ -214,7 +222,7 @@ bash: line 1: /data/nowy.txt: Read-only file system
 
 ##### Ćwiczenie 2.1 — Montowanie katalogu z hosta
 
-**Opis:** Zamontowano katalog z komputera hosta kontenerowi serwującemu serwer nginx i pokazano, że serwer prawidłowo udostępnia stronę utworzoną w pliku `index.html`.
+**Opis:** Zamontowano katalog z komputera hosta kontenerowi serwującemu serwer nginx i pokazano, że serwer prawidłowo udostępnia stronę internetową utworzoną w pliku `index.html`.
 
 **Użyte polecenia:**
 
@@ -661,7 +669,7 @@ mysql: [Warning] Using a password on the command line interface can be insecure.
 
 ##### Ćwiczenie 3.3 — MongoDB z wolumenem
 
-**Opis:** Utworzono kontener MongoDB z zamontowanym wolumenem i utworzono wewnątrz dokument a następnie odczytano jego zawartość.
+**Opis:** Utworzono kontener MongoDB z zamontowanym wolumenem. Następnie wewnątrz bazy MongoDB utworzono dokument i odczytano jego zawartość.
 
 **Użyte polecenia:**
 
@@ -864,7 +872,7 @@ ls -lh pgdata1-backup.tar.gz
 
 ##### Ćwiczenie 5.2 — Restore wolumenu
 
-**Opis:** Wykorzystano backup utworzony w ćwiczeniu 5.1 do odtworzenia zapisanych w backupie danych w nowym wolumenie a następnie sprawdzono czy nowy wolumen zawiera te dane (tabelę `studenci`).
+**Opis:** Wykorzystano backup utworzony w ćwiczeniu 5.1 do odtworzenia danych zapisanych w backupie na nowym wolumenie a następnie sprawdzono czy nowy wolumen zawiera te dane (tabelę `studenci`).
 
 **Użyte polecenia:**
 
@@ -940,7 +948,7 @@ Rys. 8 - Dane przywrócone z backupu.
 
 ##### Ćwiczenie 5.3 — Backup bazy danych (pg_dump)
 
-**Opis:** Stworzona dumpa (kopię) bazy danych PostgreSQL, zapisano go w pliku `sql` a następnie na podstawie dumpa stworzono identyczną kopię bazy danych i pokazano, że zawiera ona te same dane, co poprzednia baza.
+**Opis:** Stworzona dumpa (kopię) bazy danych PostgreSQL, zapisano go w pliku `.sql` a następnie na podstawie dumpa stworzono identyczną kopię bazy danych i pokazano, że zawiera ona te same dane, co poprzednia baza.
 
 **Użyte polecenia:**
 
@@ -1151,7 +1159,7 @@ tmpfs           100M  4.0K  100M   1% /tmp
 
 ##### Ćwiczenie 6.2 — Porównanie wydajności
 
-**Opis:** Porównano wydajność zapisu w tmpfs (RAM) i na wolumenie (dysku). Pamięć RAM powinna być znacznie szybsza od dysku, mimo to zaobserwowano odwrotne wyniki, ponadto wolumen wypadał jeszcze lepiej gdy polecenia uruchomiono ponownie. Problem jest spowodowany używaniem systemu macOS i Docker Desktop (na Windowsie problem również powinien występować). W środowisku Docker Desktop na macOS kontener nie działa natywnie na jądrze macOS, lecz wewnątrz ukrytej maszyny wirtualnej Linuxa. Zapis do tmpfs wymaga dynamicznej alokacji stron pamięci RAM wewnątrz maszyny wirtualnej oraz ciągłej synchronizacji stref pamięci z hiperwizorem macOS. Z kolei wolumen zapisuje dane do wirtualnego pliku dyskowego VM i intensywnie wykorzystuje mechanizm Page Cache Linuxa. Dzięki temu operacje zapisu na wolumenie są buforowane w pamięci podręcznej maszyny wirtualnej i natychmiast wracają jako zakończone sukcesem. W efekcie zapis na wolumenie korzysta z agresywnego buforowania I/O, podczas gdy tmpfs ponosi bezpośrednie koszty wirtualizacji pamięci RAM. Drugim podejrzanym była pamięć Swap, która była w wysokim użyciu a maszyny wirtualne są jednymi z pierwszych procesów, które trafiają do Swap, jednakże po restarcie macOS i całkowitym wyczyszczeniu Swap tmpfs wygrał nieznacznie tylko pierwszy test wydajnościowy, natomiast od drugiego i kolejnego testu ponownie zaczął wygrywać wolumen.
+**Opis:** Porównano wydajność zapisu w tmpfs (RAM) vs na wolumenie (dysku). Pamięć RAM powinna być znacznie szybsza od dysku, mimo to zaobserwowano odwrotne wyniki, ponadto wolumen wypadł jeszcze lepiej gdy polecenia uruchomiono ponownie. Problem jest spowodowany używaniem systemu macOS i Docker Desktop (na Windowsie problem również powinien występować). W środowisku Docker Desktop na macOS kontener nie działa natywnie na jądrze macOS, lecz wewnątrz ukrytej maszyny wirtualnej Linuxa. Zapis do tmpfs wymaga dynamicznej alokacji stron pamięci RAM wewnątrz maszyny wirtualnej oraz ciągłej synchronizacji stref pamięci z hiperwizorem macOS. Z kolei wolumen zapisuje dane do wirtualnego pliku dyskowego VM i intensywnie wykorzystuje mechanizm Page Cache Linuxa. Dzięki temu operacje zapisu na wolumenie są buforowane w pamięci podręcznej maszyny wirtualnej i natychmiast wracają jako zakończone sukcesem. W efekcie zapis na wolumenie korzysta z agresywnego buforowania I/O, podczas gdy tmpfs ponosi bezpośrednie koszty wirtualizacji pamięci RAM. O słabą wydajność podejrzewano również pamięć swap, która była w wysokim użyciu a z racji tego, że procesy maszyn wirtualnych są jednymi z pierwszych procesów, które do niej trafiają, było całkiem możliwe że tmpfs również trafił do pamięci swap. Jednakże po restarcie macOS i całkowitym wyczyszczeniu pamięci swap, tmpfs nieznacznie wygrał tylko pierwszy test wydajnościowy, natomiast od drugiego i kolejnego testu ponownie zaczął wygrywać wolumen.
 
 **Użyte polecenia:**
 
@@ -1376,7 +1384,7 @@ Rys. 9 - Wynik czyszczenia wolumenów.
 
 ##### Zadanie 1 — Redis z trwałymi danymi
 
-**Opis:** Uruchomiono kontener Redis z zamontowanym wolumenem i z wartością flagi `-appendonly yes`, która używana wbudowanego systemu AOF (Append Only File) do zapisywania wyników komend `SET`, `HSET`, `DEL` na dysku. Następnie usunięto kontener, utworzono nowy kontener z tym samym wolumenem i zweryfikowano, że dane przetrwały usunięcie kontenera.
+**Opis:** Uruchomiono kontener Redis z zamontowanym wolumenem i z wartością flagi `-appendonly yes`, która używa wbudowanego systemu AOF (Append Only File) do zapisywania wyników komend `SET`, `HSET` i `DEL` na dysku. Następnie usunięto kontener, utworzono nowy kontener z tym samym wolumenem i zweryfikowano, że dane przetrwały usunięcie kontenera.
 
 **Użyte polecenia:**
 
@@ -1478,7 +1486,7 @@ Rys. 10 - Dane przetrwały usunięcie kontenera Redis.
 
 ##### Zadanie 2 — Serwer plików
 
-**Opis:** Uruchomiono serwer nginx serwujący pliki z katalogu na komputerze hosta, sprawdzono, czy w przeglądarce wyświetlana jest nowo utworzona domyślna strona `index.html`, następnie stworzono nową stronę `about.html` na katalogu hosta i sprawdzono czy jest ona od razu dostępna w przeglądarce bez konieczności restartu kontenera.
+**Opis:** Uruchomiono serwer nginx serwujący pliki z katalogu na komputerze hosta, sprawdzono, czy w przeglądarce wyświetlana jest nowo utworzona strona powitalna `index.html`, następnie stworzono nową stronę `about.html` na katalogu hosta i sprawdzono czy jest ona od razu dostępna w przeglądarce bez konieczności restartu kontenera.
 
 **Użyte polecenia:**
 
@@ -1536,7 +1544,7 @@ Rys. 12 - Nowo utworzona na hoście strona `about.html` widoczna od razu w przeg
 
 ##### Zadanie 3 — Automatyczny backup
 
-**Opis:** Utworzono skrypt bash robiący automatyczny backup wolumenu bazy danych i sprawdzono, czy backup został prawidłowo utworzony. Proces można byłoby zautomatyzować dodając chron joba, wykonującego skrypt w określonych interwałach np. co godzinę razem z przekierowaniem wyjścia terminala do dodatkowego pliku logu, na wypadek gdyby skrypt wygenerował błędy:
+**Opis:** Utworzono skrypt bash wykonujący automatyczny backup wolumenu bazy danych i sprawdzono, czy backup został prawidłowo utworzony. Proces można byłoby dodatkowo zautomatyzować dodając chron joba, wykonującego skrypt w określonych interwałach np. co godzinę razem z przekierowaniem wyjścia terminala do dodatkowego pliku logu, na wypadek gdyby skrypt wygenerował błędy:
 
 ```zsh
 crontab -e
@@ -1727,14 +1735,14 @@ Rys. 13 - Wynik wykonania skryptu - został utworzony backup w folderze `volume_
 
 | Problem | Rozwiązanie |
 |---------|-------------|
-| Polecenie:<br/>`echo "<h1>Strona z hosta!</h1>" > ~/VSCodes/ASKK-25988/Lab3/web-content/index.html` zakończone wynikiem:<br/>`zsh: event not found: </h1>` | Używany przeze mnie terminal Zsh interpertuje znak ! wewnątrz cudzysłowów "" jako trigger, który rozwija historię terminala. Następnie próbuje znaleźć event o nazwie </h1> co kończy się błędem. Rozwiązaniem jest umieszczenie polecenia wewnątrz pojedynczych cudzysłowów '', które potraktują znak ! jako zwykły tekst. |
-| Polecenie:<br/>`docker exec -it mongo mongosh -u admin -p secret --eval "`<br/>`use testdb;`<br/>`db.users.insertMany([`</br>`{name: 'Jan', age: 25},`<br/>`{name: 'Anna', age: 30}`<br/>`]);`<br/>`db.users.find().pretty();`<br/>`"` zwróciła tylko 1 wynik (efekt użycia polecenia `use testdb;`) zamiast wyniku wszystkich poleceń. | Gdy powłoka mongo (mongosh) zetknie się z pomocniczą komendą `use testdb;`, wykona ją, zwróci jej wynik i przestanie procesować kolejne polecenia. Aby uniknąć takiej sytuacji zamieniono `use testdb;` będącą pomocniczą komendą powłoki, na pełnoprawny skrypt JavaScript:<br/>`const db = db.getSiblingDB('testdb');`<br/>`db.users.insertMany([`<br/>`{name: 'Jan', age: 25},`<br/>`{name: 'Anna', age: 30}`<br/>`]);`<br/>`db.users.find();`<br/> aby umożliwić wykonanie wszystkich linijek kodu. Przy okazji usunięto przestarzałe wywołanie `pretty()`, ponieważ w nowych wersjach mongo zwracane wyniki są domyślnie formatowane w czytelny i przyjazny sposób. |
+| Polecenie:<br/>`echo "<h1>Strona z hosta!</h1>" > ~/VSCodes/ASKK-25988/Lab3/web-content/index.html` zakończone wynikiem:<br/>`zsh: event not found: </h1>` | Używany przeze mnie terminal Zsh interpertuje znak ! wewnątrz cudzysłowów "" jako trigger, który rozwija historię terminala a następnie próbuje on znaleźć event o nazwie '</h1>' co kończy się błędem. Rozwiązaniem było umieszczenie polecenia wewnątrz pojedynczych cudzysłowów '', które potraktują znak ! jako zwykły tekst. |
+| Polecenie:<br/>`docker exec -it mongo mongosh -u admin -p secret --eval "`<br/>`use testdb;`<br/>`db.users.insertMany([`</br>`{name: 'Jan', age: 25},`<br/>`{name: 'Anna', age: 30}`<br/>`]);`<br/>`db.users.find().pretty();`<br/>`"`<br/>zwróciło tylko 1 wynik (efekt użycia polecenia `use testdb;`) zamiast wyniku wszystkich poleceń. | Gdy powłoka mongo (mongosh) zetknie się z pomocniczą komendą `use testdb;`, wykona ją, zwróci jej wynik i przestanie procesować kolejne polecenia. Aby uniknąć takiej sytuacji zamieniono `use testdb;` będącą pomocniczą komendą powłoki, na pełnoprawny skrypt JavaScript:<br/>`const db = db.getSiblingDB('testdb');`<br/>`db.users.insertMany([`<br/>`{name: 'Jan', age: 25},`<br/>`{name: 'Anna', age: 30}`<br/>`]);`<br/>`db.users.find();`<br/> aby umożliwić wykonanie wszystkich linijek kodu. Przy okazji usunięto przestarzałe wywołanie `pretty()`, ponieważ w nowych wersjach mongo zwracane wyniki są domyślnie formatowane w czytelny i przyjazny sposób. |
 
 ---
 
 #### 6. Wnioski
 
-Nauczyłem się tworzyć i zarządzać wolumenami Docker, używać bind mounts do development (hot-reload), konfigurować bazy danych z trwałymi wolumenami, współdzielić dane między kontenerami, wykonywać backup i restore wolumenów używać tmpfs dla danych tymczasowych i czyścić nieużywane wolumeny. W trakcie laboratorium wykazano, że wolumeny, mimo efemeryczności kontenerów, pozwalają na trwałe przechowywanie danych, które przetrwają restart i usunięcie kontenera. Udowodniono również, że wolumeny potrafią być szybsze od mechanizmu tmpfs w zależności od używanego systemu operacyjnego i liczby warstw wirtualizacji pamięci RAM. W trakcie laboratorium nie napotkano większych problemów a najciekawsza była obserwacja aktualizacji plików zmienianych na zamontowanym katalogu hosta w czasie rzeczywistym.
+Nauczyłem się tworzyć i zarządzać wolumenami Docker, używać bind mounts do development (hot-reload), konfigurować bazy danych z trwałymi wolumenami, współdzielić dane między kontenerami, wykonywać backup i restore wolumenów, używać tmpfs dla danych tymczasowych i czyścić nieużywane wolumeny. W trakcie laboratorium wykazano, że wolumeny, mimo efemeryczności kontenerów, pozwalają na trwałe przechowywanie danych, które przetrwają restart i usunięcie kontenera. Wykazano również, że wolumeny potrafią być szybsze od mechanizmu tmpfs w zależności od używanego systemu operacyjnego i liczby warstw wirtualizacji pamięci RAM. W trakcie laboratorium nie napotkano większych problemów a najciekawsza była obserwacja aktualizacji zawartości plików w czasie rzeczywistym podczas ich edycji na zamontowanym katalogu hosta.
 
 ---
 
