@@ -4,7 +4,7 @@
 
 **Temat:** Sieci Docker
 
-**Data wykonania:** 
+**Data wykonania:** 22.11.2026
 
 **Autor:** Miłosz Samotyjak
 
@@ -22,7 +22,37 @@ Praktyczne poznanie sieci Docker: bridge, user-defined networks, DNS, mapowanie 
 
 #### 2. Wstęp teoretyczny
 
-sieci docker
+**Sieci Docker**
+
+Warstwa abstrakcji oparta na natywnych mechanizmach jądra Linux, przede wszystkim na przestrzeniach nazw sieciowych, wirtualnych parach interfejsów Ethernet, mostkach programowych i regułach zapory sieciowej. Dzięki temu każdy kontener otrzymuje własny, odizolowany stos sieciowy (własną kartę eth0, adres IP, tablicę routingu i porty), zachowując się w sieci jak niezależna maszyna.
+
+**Sterowniki sieciowe i user-defined networks**
+
+Docker zarządza komunikacją za pomocą wymiennych sterowników sieciowych:
+- bridge (domyślny) - tworzy wirtualny przełącznik na hoście, do którego podpinane są kontenery. Kontenery w tej samej sieci widzą się w obrębie jednej podsieci, a ruch na zewnątrz jest maskowany za pomocą translacji adresów NAT,
+- host - usuwa izolację sieciową między kontenerem a maszyną gospodarza - kontener współdzieli interfejsy i porty bezpośrednio z hostem.
+- none - całkowicie odcina kontener od sieci, pozostawiając jedynie lokalny interfejs pętli zwrotnej,
+- overlay - umożliwia komunikację kontenerom działającym na wielu fizycznych hostach.
+
+Ważną praktyką w pracy z Dockerem jest korzystanie z sieci zdefiniowanych przez użytkownika (user-defined networks) zamiast domyślnej sieci bridge. Zapewniają one lepszą izolację, możliwość dynamicznego podpinania i odpinania działających kontenerów, obsługę aliasów sieciowych oraz wbudowane rozwiązywanie nazw.
+
+**Wbudowany serwer DNS**
+
+W domyślnej sieci bridge kontenery mogą komunikować się wyłącznie po adresach IP, ponieważ dziedziczą konfigurację DNS bezpośrednio z hosta. Problem ten znika w user-defined networks, gdzie Docker automatycznie uruchamia wbudowany serwer DNS pod lokalnym adresem 127.0.0.11. Umożliwia to:
+- rozwiązywanie po nazwach - kontenery w tej samej sieci użytkownika odnajdują się po nazwie kontenera (`--name`) lub nazwie usługi zdefiniowanej w pliku `docker-compose.yml`,
+- aliasy sieciowe (`--network-alias`) - pozwalają przypisać tę samą nazwę domenową do wielu kontenerów. Wbudowany serwer DNS realizuje wtedy prosty load-balancing metodą DNS Round-Robin, zwracając pulę adresów IP w rotującej kolejności.
+
+**Komunikacja między kontenerami i izolacja sieciowa**
+
+Architektura sieci Dockera opiera się na zasadzie domniemanej izolacji - kontenery podpięte do różnych sieci bridge nie mogą się ze sobą komunikować, nawet jeśli działają na tym samym hoście (ruch między różnymi mostkami jest blokowany przez reguły firewalla).
+Jeden kontener może być podpięty do kilku sieci jednocześnie. Pozwala to budować bezpieczne architektury (np. kontener aplikacji backend łączy się zarówno z siecią frontendu, jak i z siecią bazy danych, podczas gdy frontend nie ma żadnego dostępu do bazy).
+Sieci wewnętrzne (`--internal`) - dodanie tej flagi przy tworzeniu sieci całkowicie blokuje routing na zewnątrz (brak dostępu do Internetu i sieci lokalnej hosta), umożliwiając wyłącznie wymianę danych między kontenerami wewnątrz danej podsieci.
+
+**Mapowanie portów**
+
+Domyślnie usługi uruchomione wewnątrz kontenera (np. serwer WWW na porcie 80) są dostępne wyłącznie z wnętrza sieci Dockera i niewidoczne z hosta. Aby udostępnić aplikację światu lub maszynie gospodarza, stosuje się publikowanie portów (flaga `-p` lub `--publish`).
+Docker tworzy reguły w zaporze sieciowej hosta, które przechwytują ruch przychodzący na określony port hosta i kierują go na wskazany port kontenera, np. `-p 8080:80` przekierowuje port 8080 hosta na port 80 kontenera.
+Domyślnie port jest wystawiany na wszystkich interfejsach sieciowych hosta (0.0.0.0), ale można ograniczyć dostęp wyłącznie do ruchu lokalnego, wiążąc port z adresem pętli zwrotnej (`-p 127.0.0.1:8080:80`).
 
 ---
 
@@ -30,7 +60,7 @@ sieci docker
 
 ##### Ćwiczenie 1.1 — Eksploracja domyślnej sieci
 
-**Opis:** Uruchomiono 2 kontenery, sprawdzono ich adresy IP i spróbowano z kontenera-a spingować kontener-b po jego adresie IP i nazwie - w pierwszym przypadku polecenie ping zakończyło się sukcesem a w drugim nie. Dzieje się tak, ponieważ domyślna sieć bridge nie posiada wbudowanego serwera DNS. Rozwiązaniem tego problemu jest utworzenie własnej sieci przez użytkownika (`user-defined network`) lub skorzystanie z docker-compose, który automatycznie tworzy dedykowaną sieć bridge dla danego projektu.
+**Opis:** Uruchomiono 2 kontenery, sprawdzono ich adresy IP i spróbowano z kontenera `kontener-a` spingować `kontener-b` po jego adresie IP i nazwie - w pierwszym przypadku polecenie `ping` zakończyło się sukcesem a w drugim nie. Dzieje się tak, ponieważ domyślna sieć bridge nie posiada wbudowanego serwera DNS. Rozwiązaniem tego problemu jest utworzenie własnej sieci przez użytkownika (`user-defined network`) lub skorzystanie z docker-compose, który automatycznie tworzy dedykowaną sieć bridge dla danego projektu.
 
 **Użyte polecenia:**
 
@@ -153,7 +183,7 @@ ping: bad address 'kontener-b'
 
 **Screenshot:**
 
-![Ping po IP działa, po nazwie nie](image.png)
+![Ping po IP działa, po nazwie nie](images/image.png)
 
 Rys. 1 - Ping po IP działa, po nazwie nie.
 
@@ -161,7 +191,7 @@ Rys. 1 - Ping po IP działa, po nazwie nie.
 
 ##### Ćwiczenie 1.2 — Interfejsy sieciowe w kontenerze
 
-**Opis:** Sprawdzono wszystkie interfejsy sieciowe wewnątrz kontenera oraz przypisane do nich adresy IP, sprawdzono tablicę routingu kontenera i odczytano plik konfiguracyjny odpowiedzialny za rozwiązywanie nazw domenowych (DNS) wewnątrz kontenera.
+**Opis:** Sprawdzono wszystkie interfejsy sieciowe wewnątrz kontenera i przypisane do nich adresy IP, sprawdzono tablicę routingu kontenera oraz odczytano plik konfiguracyjny odpowiedzialny za rozwiązywanie nazw domenowych (DNS) wewnątrz kontenera.
 
 **Użyte polecenia:**
 
@@ -237,7 +267,7 @@ kontener-b
 
 ##### Ćwiczenie 2.1 — Tworzenie sieci i DNS
 
-**Opis:** Utworzono własną sieć Dockera, uruchomiono 2 kontenery w tej sieci i pokazano, że działa wewnątrz niej serwer DNS, ponieważ polecenie `ping` zakończyło się sukcesem gdy jako komputer docelowy wskazano nazwę kontenera oraz polecenie `nslookup` było w stanie znaleźć adres IP kontenera `web`.
+**Opis:** Utworzono własną sieć Dockera, uruchomiono 2 kontenery w tej sieci i pokazano, że działa wewnątrz niej serwer DNS, ponieważ polecenie `ping` zakończyło się sukcesem, gdy jako komputer docelowy wskazano nazwę kontenera a polecenie `nslookup` było w stanie znaleźć adres IP kontenera `web`.
 
 **Użyte polecenia:**
 
@@ -295,7 +325,7 @@ Non-authoritative answer:
 
 **Screenshot:**
 
-![DNS działa w user-defined network](image-1.png)
+![DNS działa w user-defined network](images/image-1.png)
 
 Rys. 2 - DNS działa w user-defined network.
 
@@ -303,7 +333,7 @@ Rys. 2 - DNS działa w user-defined network.
 
 ##### Ćwiczenie 2.2 — Izolacja sieci
 
-**Opis:** Utworzona drugą sieć, uruchomiono wewnątrz niej kontener i pokazano, że kontener nie może pingować kontenerów z innej sieci, ponieważ sieci Dockera są izolowane.
+**Opis:** Utworzona drugą sieć, uruchomiono wewnątrz niej kontener i pokazano, że ten kontener nie może pingować kontenerów z innej sieci, ponieważ sieci Dockera są izolowane.
 
 **Użyte polecenia:**
 
@@ -337,9 +367,9 @@ ping: bad address 'web'
 
 **Screenshot:**
 
-![Izolacja — kontener z innej sieci nie widzi web](image-2.png)
+![Izolacja — kontener z innej sieci nie widzi web](images/image-2.png)
 
-Rys. 3 - Izolacja — kontener z innej sieci nie widzi web.
+Rys. 3 - Izolacja — kontener z innej sieci nie widzi `web`.
 
 ---
 
@@ -397,7 +427,7 @@ round-trip min/avg/max = 0.121/0.169/0.217 ms
 
 ##### Ćwiczenie 2.4 — Sieć z niestandardową konfiguracją
 
-**Opis:** Utworzono sieć typu `bridge` o nazwie `custom-net` z własną konfiguracją podsieci i bramki domyślnej a następnie utworzono kontener działający wewnątrz tej sieci, nadano mu ręcznie adres IP i sprawdzono, że został mu nadany wskazany wcześniej adres IP. Na koniec usunięto nowo-utworzone kontenery i sieci.
+**Opis:** Utworzono sieć typu `bridge` o nazwie `custom-net` z własną konfiguracją podsieci i bramki domyślnej a następnie utworzono kontener działający wewnątrz tej sieci, nadano mu ręcznie adres IP i sprawdzono, że został mu nadany wskazany wcześniej adres IP. Na koniec usunięto nowo utworzone kontenery i sieci.
 
 **Użyte polecenia:**
 
@@ -460,7 +490,7 @@ custom-net
 
 ##### Ćwiczenie 3.1 — Różne tryby mapowania
 
-**Opis:** Uruchomiono 4 kontenery z serwerem Nginx, demonstrując różne sposoby publikowania portów na hoście: statyczne przypisanie konkretnego portu (`web1` na `8080`), automatyczne przydzielenie losowego portu z puli systemowej (`web2` otrzymał port `60443`), ograniczenie nasłuchiwania wyłącznie do lokalnego interfejsu pętli zwrotnej (`web3` na `127.0.0.1:8081`) oraz jednoczesne przekierowanie wielu portów (`web4` na `8082` i `8443`).
+**Opis:** Uruchomiono 4 kontenery z serwerem Nginx, pokazując różne sposoby publikowania portów na hoście: statyczne przypisanie konkretnego portu (`web1` na `8080`), automatyczne przydzielenie losowego portu z puli systemowej (`web2` otrzymał port `60443`), ograniczenie nasłuchiwania wyłącznie do lokalnego interfejsu pętli zwrotnej (`web3` na `127.0.0.1:8081`) oraz jednoczesne przekierowanie wielu portów (`web4` na `8082` i `8443`).
 
 **Użyte polecenia:**
 
@@ -593,7 +623,7 @@ web4
 
 **Screenshot:**
 
-![Kontenery z różnymi mapowaniami portów](image-3.png)
+![Kontenery z różnymi mapowaniami portów](images/image-3.png)
 
 Rys. 4 - Kontenery z różnymi mapowaniami portów.
 
@@ -601,7 +631,7 @@ Rys. 4 - Kontenery z różnymi mapowaniami portów.
 
 ##### Ćwiczenie 4.1 — Aplikacja webowa + baza danych
 
-**Opis:** Uruchomiono kontener z bazą danych PostgreSQL oraz kontener systemu zarządzania bazą danych Adminer wewnątrz sieci `app-net` i pokazano, że Adminer jest w stanie połączyć się z bazą danych.
+**Opis:** Uruchomiono kontener z bazą danych PostgreSQL i kontener z graficznym systemem zarządzania bazą danych Adminer wewnątrz sieci `app-net` oraz pokazano, że Adminer jest w stanie połączyć się z bazą danych.
 
 **Użyte polecenia:**
 
@@ -675,7 +705,7 @@ Status: Downloaded newer image for adminer:latest
 
 **Screenshot:**
 
-![Adminer połączony z bazą PostgreSQL](image-4.png)
+![Adminer połączony z bazą PostgreSQL](images/image-4.png)
 
 Rys. 5 - Adminer połączony z bazą PostgreSQL.
 
@@ -811,7 +841,7 @@ ping: bad address 'db2'
 
 **Screenshot:**
 
-![Nginx nie może pingować bazy danych (izolacja)](image-5.png)
+![Nginx nie może pingować bazy danych (izolacja)](images/image-5.png)
 
 Rys. 6 - Nginx nie może pingować bazy danych (izolacja).
 
@@ -951,7 +981,7 @@ host-nginx
 
 ##### Ćwiczenie 5.2 — Sieć none
 
-**Opis:** Uruchomienie kontenerów z flagą `--network none` całkowicie izoluje je od stosu sieciowego hosta oraz innych kontenerów, przez co polecenie `ip addr` wykazuje obecność wyłącznie lokalnego interfejsu pętli zwrotnej i brak karty `eth0`. Z powodu braku zewnętrznego interfejsu sieciowego oraz tablicy routingu, próba spingowania zewnętrznego adresu `8.8.8.8` kończy się natychmiastowym błędem.
+**Opis:** Uruchomiono kontenery z flagą `--network none`, która całkowicie izoluje je od stosu sieciowego hosta i innych kontenerów, przez co polecenie `ip addr` wykazuje obecność wyłącznie lokalnego interfejsu pętli zwrotnej i brak karty `eth0`. Z powodu braku zewnętrznego interfejsu sieciowego i tablicy routingu, próba spingowania zewnętrznego adresu `8.8.8.8` zakończyła się natychmiastowym błędem.
 
 **Użyte polecenia:**
 
@@ -1001,7 +1031,7 @@ PING 8.8.8.8 (8.8.8.8): 56 data bytes
 
 **Screenshot:**
 
-![Kontener z siecią none — brak interfejsów sieciowych](image-6.png)
+![Kontener z siecią none — brak interfejsów sieciowych](images/image-6.png)
 
 Rys. 7 - Kontener z siecią none — brak interfejsów sieciowych.
 
@@ -1205,9 +1235,288 @@ Build Cache     110       0         2.37GB    282.5MB
 
 **Screenshot:**
 
-![Wynik czyszczenia sieci](image-7.png)
+![Wynik czyszczenia sieci](images/image-7.png)
 
 Rys. 8 - Wynik czyszczenia sieci.
+
+---
+
+##### Zadania do samodzielnego wykonania
+
+##### Zadanie 1 — Sieć wewnętrzna
+
+**Opis:** Utworzono sieć `isolated-network` bez dostępu do internetu, uruchomiono 2 kontenery wewnątrz tej sieci a następnie sprawdzono, że nie mogą się komunikować z komputerami z Internetu ale mogą komunikować się ze sobą.
+
+**Użyte polecenia:**
+
+```zsh
+docker network create --internal isolated-network
+
+docker run -d --name destination --network isolated-network alpine sleep 3600
+docker run -d --name client --network isolated-network alpine sleep 3600
+
+docker exec client ping -c 2 8.8.8.8
+
+docker exec client ping -c 2 destination
+
+docker rm -f destination client && docker network rm isolated-network
+```
+
+**Wynik działania:**
+
+```zsh
+~/VSCodes/ASKK-25988/Lab4 % docker network create --internal isolated-network
+fcfce1565e58368450274cd5e5cdcb837baebcb508a1a9fd6f703b98f0e5cf6b
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab4 % docker run -d --name destination --network isolated-network alpine sleep 3600
+docker run -d --name client --network isolated-network alpine sleep 3600
+429e39cb045e560cb0e56e7b8d682a458ed2b9da89c884c091e55d5ec98da6e0
+cc7f9993e4b18d96bd7e6819ce5f8f224265d52c4f6ab7edc78725fe4cd5f337
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab4 % docker exec client ping -c 2 8.8.8.8
+ping: sendto: Network unreachable
+PING 8.8.8.8 (8.8.8.8): 56 data bytes
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab4 % docker exec client ping -c 2 destination
+PING destination (172.18.0.2): 56 data bytes
+64 bytes from 172.18.0.2: seq=0 ttl=64 time=0.093 ms
+64 bytes from 172.18.0.2: seq=1 ttl=64 time=0.134 ms
+
+--- destination ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.093/0.113/0.134 ms
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab4 % docker rm -f destination client && docker network rm isolated-network
+destination
+client
+isolated-network
+```
+
+**Screenshot:**
+
+![siec wewnetrzna](images/image-8.png)
+
+Rys. 9 - Kontener w sieci wewnętrznej nie jest w stanie komunikować się z zewnętrznym komputerem, natomiast bezproblemowo komunikuje się z kontenerem w tej samej sieci.
+
+---
+
+##### Zadanie 2 — Architektura trójwarstwowa
+
+**Opis:** Zaprojektowano architekturę trójwarstwową z bazą danych, backendem i frontendem oraz dwoma sieciami `frontend-net` i wewnętrzną siecią `backend-net`. Aplikację backend podłączono do obydwu sieci, natomiast bazę danych jedynie do sieci `backend-net` a aplikację frontend jedynie do `frontend-net`. Na koniec pokazano, że frontend bez problemu komunikuje się z backendem, a backend z bazą danych, natomiast sieć nie zezwala na połączenie między frontendem i bazą danych ani bazą danych i Internetem.
+
+**Użyte polecenia:**
+
+```zsh
+docker network create frontend-net
+docker network create --internal backend-net
+
+docker run -d --name db \
+  --network backend-net \
+  -e POSTGRES_PASSWORD=secret \
+  postgres:16-alpine
+
+docker run -d --name backend-app \
+  --network backend-net \
+  python:3.12-alpine sleep 3600
+
+docker network connect frontend-net backend-app
+
+docker run -d --name nginx \
+  --network frontend-net \
+  -p 8080:80 \
+  nginx:alpine
+
+docker exec nginx ping -c 2 backend-app # Frontend    → Backend     - ok
+docker exec backend-app nc -zv db 5432  # Backend     → Baza danych - ok
+docker exec nginx ping -c 2 db          # Frontend    → Baza danych - zablokowane
+docker exec db ping -c 2 8.8.8.8        # Baza danych → Internet    - zablokowane
+
+docker rm -f nginx backend-app db && docker network rm frontend-net backend-net
+```
+
+**Wynik działania:**
+
+```zsh
+~/VSCodes/ASKK-25988/Lab4 % docker network create frontend-net
+02d05148295a4c0b4201e5fbbcad8f79e6d09795f64f49e734e372a3b99ce53b
+
+~/VSCodes/ASKK-25988/Lab4 % docker network create --internal backend-net
+65920fcb39c132299155a9d7593b199efaa06464ba3ac55323b13a5766483c4d
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab4 % docker run -d --name db \
+  --network backend-net \
+  -e POSTGRES_PASSWORD=secret \
+  postgres:16-alpine
+aab46cdaffb1a3f400503cb3c795bf8f4b07fb647775a61cdd5f0f63d39b1e51
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab4 % docker run -d --name backend-app \
+  --network backend-net \
+  python:3.12-alpine sleep 3600
+Unable to find image 'python:3.12-alpine' locally
+3.12-alpine: Pulling from library/python
+8ab1992027df: Pull complete 
+6d356b48c1c5: Pull complete 
+9cee687b648e: Pull complete 
+2256d60705b2: Download complete 
+8f33bda100ff: Download complete 
+Digest: sha256:c5ba3deef00c7758561a0f03c26f44f10589263d40e732b8748e0d1f38f6dd89
+Status: Downloaded newer image for python:3.12-alpine
+9f3dcf0980cd9d01b7e806d817374116bbdc6e13033ba017c3e49046bff263cd
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab4 % docker network connect frontend-net backend-app
+~/VSCodes/ASKK-25988/Lab4 %
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab4 % docker run -d --name nginx \
+  --network frontend-net \
+  -p 8080:80 \
+  nginx:alpine
+ccecbca59955e97799a600b57375ff3c46fca30cb90abd8d99a8e71d022bb7ec
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab4 % docker exec nginx ping -c 2 backend-app
+PING backend-app (172.18.0.2): 56 data bytes
+64 bytes from 172.18.0.2: seq=0 ttl=64 time=0.103 ms
+64 bytes from 172.18.0.2: seq=1 ttl=64 time=0.146 ms
+
+--- backend-app ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.103/0.124/0.146 ms
+
+~/VSCodes/ASKK-25988/Lab4 % docker exec backend-app nc -zv db 5432
+db (172.19.0.2:5432) open
+
+~/VSCodes/ASKK-25988/Lab4 % docker exec nginx ping -c 2 db
+ping: bad address 'db'
+
+~/VSCodes/ASKK-25988/Lab4 % docker exec db ping -c 2 8.8.8.8
+ping: sendto: Network unreachable
+PING 8.8.8.8 (8.8.8.8): 56 data bytes
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab4 % docker rm -f nginx app db && docker network rm frontend-net backend-net
+nginx
+backend-app
+db
+frontend-net
+backend-net
+```
+
+**Screenshot:**
+
+![architektura trojwarstwowa](images/image-9.png)
+
+Rys. 10 - Wynik komunikacji między kontenerami i Internetem: Frontend → Backend - ok, Backend → Baza danych - ok, Frontend → Baza danych - zablokowane, Baza danych → Internet - zablokowane.
+
+---
+
+##### Zadanie 3 — Round-robin DNS
+
+**Opis:** Utworzono 3 kontenery wewnątrz tej samej sieci `alias-network` o tym samym aliasie sieciowym `service` a następnie sprawdzono jak zachowa się serwer DNS. Pokazano, że polecenie `nslookup` jest w stanie znaleźć adresy IP wszystkich kontenerów o aliasie `service` a mechanizm round-robin próbuje rozdzielić ruch sieciowy po równo dla każdego kontenera, co widać po tym, że w przypadku kolejnych wywołań polecenia `nslookup` adresy IP są zwracane w różnej kolejności.
+
+**Użyte polecenia:**
+
+```zsh
+docker network create alias-network
+
+docker run -d --name worker1 --network alias-network --network-alias service alpine sleep 3600
+docker run -d --name worker2 --network alias-network --network-alias service alpine sleep 3600
+docker run -d --name worker3 --network alias-network --network-alias service alpine sleep 3600
+
+docker run --rm --network alias-network alpine nslookup service
+
+docker run --rm --network alias-network alpine sh -c 'for i in 1 2 3 4; do echo "--- Zapytanie $i ---"; nslookup service | grep "Address:"; done'
+
+docker rm -f worker1 worker2 worker3 && docker network rm alias-network
+```
+
+**Wynik działania:**
+
+```zsh
+~/VSCodes/ASKK-25988/Lab4 % docker network create alias-network
+304b648b3333215fcd182a9977f0e26897ec6ece799690a6c4b8725f2991af66
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab4 % docker run -d --name worker1 --network alias-network --network-alias service alpine sleep 3600
+docker run -d --name worker2 --network alias-network --network-alias service alpine sleep 3600
+docker run -d --name worker3 --network alias-network --network-alias service alpine sleep 3600
+088a2603407423346ef9ebe929958c4ac1a6a4e9d185604f604eb8c71251b656
+bd378cf324e91dd69dcddd31b841c2251e860c81397dd756ba7c8dc5cca90460
+e16ca817ecef472cf17570467d015f20a1a0540469e520df4387ce140a3d49f4
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab4 % docker run --rm --network alias-network alpine nslookup service
+Server:		127.0.0.11
+Address:	127.0.0.11:53
+
+Non-authoritative answer:
+
+Non-authoritative answer:
+Name:	service
+Address: 172.18.0.4
+Name:	service
+Address: 172.18.0.2
+Name:	service
+Address: 172.18.0.3
+
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab4 % docker run --rm --network alias-network alpine sh -c 'for i in 1 2 3 4; do echo "--- Zapytanie $i ---"; nslookup service | grep "Address:"; done'
+--- Zapytanie 1 ---
+Address:	127.0.0.11:53
+Address: 172.18.0.3
+Address: 172.18.0.2
+Address: 172.18.0.4
+--- Zapytanie 2 ---
+Address:	127.0.0.11:53
+Address: 172.18.0.4
+Address: 172.18.0.2
+Address: 172.18.0.3
+--- Zapytanie 3 ---
+Address:	127.0.0.11:53
+Address: 172.18.0.4
+Address: 172.18.0.2
+Address: 172.18.0.3
+--- Zapytanie 4 ---
+Address:	127.0.0.11:53
+Address: 172.18.0.2
+Address: 172.18.0.3
+Address: 172.18.0.4
+```
+
+```zsh
+~/VSCodes/ASKK-25988/Lab4 % docker rm -f worker1 worker2 worker3 && docker network rm alias-network
+worker1
+worker2
+worker3
+alias-network
+```
+
+**Screenshot:**
+
+![round-robin](images/image-10.png)
+
+Rys. 11 - Mechanizm round-robin serwera DNS - w przypadku istnienia wielu adresów IP o tej samej nazwie domenowej, ruch sieciowy jest rozdzielany w miarę równo po wielu adresach (technika load-balancing).
 
 ---
 
@@ -1216,19 +1525,19 @@ Rys. 8 - Wynik czyszczenia sieci.
 ##### Dockerfile
 
 ```dockerfile
-# [WKLEJ TUTAJ ZAWARTOŚĆ PLIKU Dockerfile]
+# - brak -
 ```
 
 ##### docker-compose.yaml
 
 ```yaml
-# [WKLEJ TUTAJ ZAWARTOŚĆ PLIKU docker-compose.yaml]
+# - brak -
 ```
 
 ##### Inne pliki
 
 ```
-# [WKLEJ TUTAJ ZAWARTOŚĆ INNYCH ISTOTNYCH PLIKÓW, NP. .env, nginx.conf ITP.]
+# - brak -
 ```
 
 ---
@@ -1237,18 +1546,16 @@ Rys. 8 - Wynik czyszczenia sieci.
 
 | Problem | Rozwiązanie |
 |---------|-------------|
-| [OPIS PROBLEMU 1] | [JAK ZOSTAŁ ROZWIĄZANY] |
-| [OPIS PROBLEMU 2] | [JAK ZOSTAŁ ROZWIĄZANY] |
+| - brak - | - brak - |
 
 ---
 
 #### 6. Wnioski
 
-[Podsumowanie — czego się nauczyłeś/aś, jakie wnioski wynikają z przeprowadzonych ćwiczeń, co było najtrudniejsze, co najciekawsze.]
+Nauczyłem się tworzyć i zarządzać sieciami Docker, konfigurować DNS w user-defined networks, izolować kontenery w osobnych sieciach, mapować porty w różnych trybach, łączyć kontenery w architekturę wielowarstwową i diagnozować problemy sieciowe. W ramach laboratorium wykazano, jak ważne jest odpowiednie zaprojektowanie architektury sieciowej Dockera, aby odpowiednie kontenery mogły się ze sobą komunikować, a pozostałe nie. Pokazano również jak ważna jest flaga `--internal` blokująca kontenerowi dostęp do Internetu, co jest bardzo ważne w przypadku usług, które do Internetu nie powinny mieć dostępu, takich jak baza danych. W trakcie laboratorium nie napotkano większych problemów a najciekawsza była weryfikacja mechanizmów izolacji sieci i blokowanie kontenerom dostępu do Internetu.
 
 ---
 
 #### 7. Bibliografia / źródła
 
 - [Docker Documentation](https://docs.docker.com/)
-- [INNE WYKORZYSTANE ŹRÓDŁA]
