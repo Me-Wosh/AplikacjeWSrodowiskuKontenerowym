@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+    ports:
+      - "5432:5432"
+
+  adminer:
+    image: adminer
+    ports:
+      - "${APP_PORT:-8080}:8080"
+
+  app:
+    image: python:3.11-slim
+    env_file:
+      - app.env
+    command: python -c "import os; [print(f'{k}={v}') for k,v in os.environ.items() if k in ('DEBUG','SECRET_KEY','LOG_LEVEL')]"

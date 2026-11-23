@@ -1,0 +1,15 @@
+# docker-compose.yaml
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: myapp
+
+  cache:
+    image: redis:7-alpine
