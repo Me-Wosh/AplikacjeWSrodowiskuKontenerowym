@@ -1,0 +1,25 @@
+services:
+  app:
+    build:
+      context: .
+      target: development # Wskazuje etap dev w multi-stage Dockerfile
+    restart: "no"
+    ports:
+      - "8000:8000"
+      - "9229:9229" # Port debuggera (np. 9229 dla Node.js, 5678 dla Python debugpy)
+    environment:
+      - NODE_ENV=development
+      - DEBUG=true
+    volumes:
+      # Bind mount całego katalogu projektu dla hot-reloadingu
+      - .:/app
+      # Anonimowy wolumen chroniący zależności kontenera przed nadpisaniem przez pusty/inny katalog hosta
+      - /app/node_modules
+    # Nadpisanie komendy startowej na tryb watch + nasłuchiwanie debuggera
+    command: npm run dev -- --inspect=0.0.0.0:9229
+
+  db:
+    restart: "no"
+    # Wystawienie portu bazy na hosta (np. dla DBeaver / TablePlus)
+    ports:
+      - "5432:5432"

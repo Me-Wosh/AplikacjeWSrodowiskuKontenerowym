@@ -1,0 +1,29 @@
+# docker-compose.yaml
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    networks:
+      - frontend
+
+  app:
+    image: alpine
+    command: sleep 3600
+    networks:
+      - frontend
+      - backend
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: secret
+    networks:
+      - backend
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+    internal: true  # brak dostępu do internetu
